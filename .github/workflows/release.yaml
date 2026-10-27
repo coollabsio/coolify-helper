@@ -174,3 +174,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           LATEST: ${{ fromJSON(steps.plan.outputs.tags).latest }}
         run: gh release edit "$LATEST" --latest
+
+  merge:
+    name: Merge forward
+    needs: publish
+    permissions:
+      contents: write # push the merges
+      pull-requests: write # open a pull request when a merge conflicts
+    uses: $/.github/workflows/merge-forward.yaml
