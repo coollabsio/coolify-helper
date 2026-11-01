@@ -87,5 +87,7 @@ RUN case "${TARGETARCH}" in \
 COPY --from=minio-client /usr/bin/mc /usr/bin/mc
 RUN chmod +x /usr/bin/mc && mc --version
 
+LABEL org.opencontainers.image.source="https://github.com/coollabsio/coolify-helper"
+
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["tail", "-f", "/dev/null"]
