@@ -69,6 +69,7 @@ jobs:
         id: args
         run: |
           {
+            echo "epoch=$(git log -1 --format=%ct)"
             echo "created=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ)"
             echo "sha=$(git rev-parse HEAD)"
           } >> "$GITHUB_OUTPUT"
@@ -84,9 +85,10 @@ jobs:
           context: src
           platforms: ${{ matrix.platform }}
           tags: coollabsio/coolify-helper:test
-          outputs: type=oci,dest=${{ runner.temp }}/image,tar=false
+          outputs: type=oci,dest=${{ runner.temp }}/image,tar=false,rewrite-timestamp=true
           build-args: |
             IMAGE_VERSION=${{ needs.plan.outputs.image }}
+            SOURCE_DATE_EPOCH=${{ steps.args.outputs.epoch }}
             CREATED=${{ steps.args.outputs.created }}
             GIT_SHA=${{ steps.args.outputs.sha }}
 
