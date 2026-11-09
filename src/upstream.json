@@ -1,1 +1,121 @@
-{}
+{
+	"buildx": {
+		"latest": {
+			"version": "0.38.1",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/docker/buildx/releases/download/v0.38.1/buildx-v0.38.1.linux-amd64",
+					"size": 68366498,
+					"sha256": "e25d5cd675092bb5d1d03632fdc46cdf3fede7b514dc5f023a105e00d3ce5ad4"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/docker/buildx/releases/download/v0.38.1/buildx-v0.38.1.linux-arm64",
+					"size": 63766690,
+					"sha256": "3b83b3731916ba433feccaaa689fe5bcdc81c641d92c8e6c2ea865dfa141c97a"
+				}
+			}
+		}
+	},
+	"compose": {
+		"latest": {
+			"version": "5.6.1",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-x86_64",
+					"size": 32676477,
+					"sha256": "47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-aarch64",
+					"size": 30604453,
+					"sha256": "42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d"
+				}
+			}
+		}
+	},
+	"docker": {
+		"latest": {
+			"version": "29.9.2",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://download.docker.com/linux/static/stable/x86_64/docker-29.9.2.tgz",
+					"size": 86374273,
+					"sha256": "9ac225999fd5e863f7694c728ef23d480616b1e5639328fa309befd4243d69eb"
+				},
+				"linux/arm64": {
+					"url": "https://download.docker.com/linux/static/stable/aarch64/docker-29.9.2.tgz",
+					"size": 77953959,
+					"sha256": "873b3e0207857c3b2f28392fb922f3ea6efe37620c16d4d4aaf2fef409c90b73"
+				}
+			}
+		}
+	},
+	"mise": {
+		"latest": {
+			"version": "2026.10.14",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/jdx/mise/releases/download/v2026.10.14/mise-v2026.10.14-linux-x64-musl",
+					"size": 151164336,
+					"sha256": "b0e388c8014f9ac14a5ddf7a4042b0db28043f7f9ce485ffc2521bff02247f8e"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/jdx/mise/releases/download/v2026.10.14/mise-v2026.10.14-linux-arm64-musl",
+					"size": 146334592,
+					"sha256": "c71eec4d0015f6ced74ac9d5cd755b56674df04e899d0d1566d533c95511ae6c"
+				}
+			}
+		}
+	},
+	"nixpacks": {
+		"latest": {
+			"version": "1.41.0",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/railwayapp/nixpacks/releases/download/v1.41.0/nixpacks-v1.41.0-x86_64-unknown-linux-musl.tar.gz",
+					"size": 3717141,
+					"sha256": "0f55de7874507b9cf7502113120bd96f2ab6979f78d10eaf2eb2ade9207b3af6"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/railwayapp/nixpacks/releases/download/v1.41.0/nixpacks-v1.41.0-aarch64-unknown-linux-musl.tar.gz",
+					"size": 4111227,
+					"sha256": "912bd02dd2bb6f9c3a9ed965fe8a68b4aa318dc7a2546e2eca6f2806a894ba39"
+				}
+			}
+		}
+	},
+	"pack": {
+		"latest": {
+			"version": "0.40.10",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/buildpacks/pack/releases/download/v0.40.10/pack-v0.40.10-linux.tgz",
+					"size": 11180606,
+					"sha256": "687c3616e21824a449b56d4f989613ca68c921c6cce670b4de4459b025233806"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/buildpacks/pack/releases/download/v0.40.10/pack-v0.40.10-linux-arm64.tgz",
+					"size": 9976611,
+					"sha256": "9a294abb0576fd95e19a009b3f9d5f5aa9fecdc2d7da7fa05e7e1e94f5085d77"
+				}
+			}
+		}
+	},
+	"railpack": {
+		"latest": {
+			"version": "0.43.0",
+			"platforms": {
+				"linux/amd64": {
+					"url": "https://github.com/railwayapp/railpack/releases/download/v0.43.0/railpack-v0.43.0-x86_64-unknown-linux-musl.tar.gz",
+					"size": 8857620,
+					"sha256": "248a8f60f36854aabed6124113631078a802de3461660855fc4de9c26065c1fb"
+				},
+				"linux/arm64": {
+					"url": "https://github.com/railwayapp/railpack/releases/download/v0.43.0/railpack-v0.43.0-arm64-unknown-linux-musl.tar.gz",
+					"size": 7989638,
+					"sha256": "732ece14eb4f4676a43ebba19431f954edf7b130acb76159ef0f2ff86ac42ac9"
+				}
+			}
+		}
+	}
+}

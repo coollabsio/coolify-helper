@@ -109,13 +109,9 @@ Missing description and license on ghcr.io
 
 ## Update a tool
 
-1. Set the new version in `src/Dockerfile` and write its checksums:
-
-   ```sh
-   scripts/helper-checksums
-   ```
-
-2. Describe the update in a change file with `scripts/change.sh` and create a release
+1. Pin the new version in `src/upstream.json` with the url, the size and the SHA-256 of the download for each platform, the build verifies every download against them. For Railpack, also set `RAILPACK_VERSION` in `src/Dockerfile` and pin the mise version it runs, from its `core/mise/version.txt`
+2. Describe the update in a change file with `scripts/change.sh` and squash merge a pull request as `build(image): bump dependencies to the latest releases`
+3. Create a release, a tool update publishes nothing on its own
 
 ## Release a major version
 
