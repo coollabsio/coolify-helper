@@ -85,7 +85,7 @@ jobs:
           context: src
           platforms: ${{ matrix.platform }}
           tags: coollabsio/coolify-helper:test
-          outputs: type=oci,dest=${{ runner.temp }}/image,tar=false,rewrite-timestamp=true
+          outputs: type=oci,dest=${{ runner.temp }}/image,tar=false,rewrite-timestamp=true,compression=zstd,compression-level=11,force-compression=true
           build-args: |
             IMAGE_VERSION=${{ needs.plan.outputs.image }}
             SOURCE_DATE_EPOCH=${{ steps.args.outputs.epoch }}
