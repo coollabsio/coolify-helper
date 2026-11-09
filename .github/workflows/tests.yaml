@@ -12,6 +12,29 @@ defaults:
     shell: bash
 
 jobs:
+  lint:
+    name: Lint repository
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint the repository
+        run: scripts/lint.sh
+
+      - name: Verify the action lockfile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # https://github.com/github/gh-actions-lock/releases/tag/v0.4.1
+        run: |
+          gh extension install github/gh-actions-lock --pin v0.4.1
+          gh actions-lock --verify
+
   test:
     name: Test image (${{ matrix.platform }})
     permissions:

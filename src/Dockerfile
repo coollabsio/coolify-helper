@@ -25,6 +25,7 @@ ARG TARGETPLATFORM
 ARG MINIO_CLIENT_VERSION
 
 # binutils, curl, jq and openssl are only used during the build stage, so they are not pinned to a specific version
+# hadolint ignore=DL3018
 RUN apk add --no-cache binutils curl jq openssl
 
 WORKDIR /src
@@ -61,6 +62,7 @@ ARG CREATED
 ARG GIT_SHA
 
 # The packages follow the Alpine release of the base image, so they are not pinned to a specific version
+# hadolint ignore=DL3017,DL3018
 RUN apk upgrade --no-cache \
     && apk add --no-cache bash curl git git-lfs openssh-client pigz tar tini
 
