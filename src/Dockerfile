@@ -9,6 +9,11 @@ ARG BASE_IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf5196
 # https://github.com/pgsty/mc/releases
 ARG MINIO_CLIENT_IMAGE=docker.io/pgsty/mc:RELEASE.2026-11-09T00-00-00Z@sha256:82b1c51de77aa7687d4d2c1a2b388dc7752528a64377c48a3e1271dcac39dbcf
 
+# Set by the build workflow
+ARG IMAGE_VERSION
+ARG CREATED
+ARG GIT_SHA
+
 FROM ${MINIO_CLIENT_IMAGE} AS minio-client
 
 FROM ${BASE_IMAGE} AS build
@@ -31,7 +36,11 @@ RUN sh /src/rootfs.sh
 
 FROM ${BASE_IMAGE} AS final
 
+ARG BASE_IMAGE
 ARG RAILPACK_VERSION
+ARG IMAGE_VERSION
+ARG CREATED
+ARG GIT_SHA
 
 # The packages follow the Alpine release of the base image, so they are not pinned to a specific version
 RUN apk upgrade --no-cache \
@@ -40,7 +49,20 @@ RUN apk upgrade --no-cache \
 COPY --from=build /rootfs/ /
 COPY --from=minio-client /usr/bin/mc /usr/bin/mc
 
-LABEL org.opencontainers.image.source="https://github.com/coollabsio/coolify-helper"
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+LABEL org.opencontainers.image.title="Coolify Helper" \
+    org.opencontainers.image.description="The tools Coolify runs on every server to build and deploy applications." \
+    org.opencontainers.image.version="${IMAGE_VERSION}" \
+    org.opencontainers.image.created="${CREATED}" \
+    org.opencontainers.image.revision="${GIT_SHA}" \
+    org.opencontainers.image.licenses="Apache-2.0" \
+    org.opencontainers.image.authors="coollabsio" \
+    org.opencontainers.image.vendor="coollabsio" \
+    org.opencontainers.image.url="https://hub.docker.com/r/coollabsio/coolify-helper" \
+    org.opencontainers.image.source="https://github.com/coollabsio/coolify-helper" \
+    org.opencontainers.image.documentation="https://github.com/coollabsio/coolify-helper#readme" \
+    org.opencontainers.image.base.name="${BASE_IMAGE}" \
+    coolify.managed="true"
 
 ENV RAILPACK_VERSION=${RAILPACK_VERSION}
 

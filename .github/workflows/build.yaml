@@ -25,6 +25,8 @@ jobs:
       contents: read
     runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
     timeout-minutes: 10
+    outputs:
+      image: ${{ steps.plan.outputs.image }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
@@ -32,10 +34,13 @@ jobs:
           persist-credentials: false
 
       - name: Plan the image version
+        id: plan
         env:
           BRANCH: ${{ github.base_ref || github.ref_name }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
-        run: scripts/plan-version.sh --build
+        run: |
+          image="$(scripts/plan-version.sh --build)"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build image (${{ matrix.platform }})
@@ -60,6 +65,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Read the commit date and hash
+        id: args
+        run: |
+          {
+            echo "created=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ)"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4.4.1
         with:
@@ -72,6 +85,10 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: coollabsio/coolify-helper:test
           outputs: type=oci,dest=${{ runner.temp }}/image,tar=false
+          build-args: |
+            IMAGE_VERSION=${{ needs.plan.outputs.image }}
+            CREATED=${{ steps.args.outputs.created }}
+            GIT_SHA=${{ steps.args.outputs.sha }}
 
       - name: Upload the image
         uses: actions/upload-artifact@v7.0.2
