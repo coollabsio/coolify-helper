@@ -150,6 +150,7 @@ Missing description and license on ghcr.io
 The pull request workflow builds and tests every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`.
 
 - Pull requests from forks and Dependabot are built, not published
+- Every pull request gets a comment with the size change of its image compared with the latest release
 - A push to a pull request from `main`, `next`, a release branch or a patch branch that changes `release.json` is not built, the release workflow builds it
 - Pull request builds are published to ghcr.io only, as the Docker Hub credentials are in the `release` environment, which no pull request run can use
 - Pull request builds create no git tag and no GitHub release
