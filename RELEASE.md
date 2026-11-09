@@ -50,7 +50,7 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
    scripts/release.sh
    ```
 
-4. The pushed commit changes `release.json`, so it runs the release workflow, which builds and publishes the release and moves its tags
+4. The pushed commit changes `release.json`, so it runs the release workflow, which builds, tests and publishes the release and moves its tags
 
 > [!TIP]
 > To take the release commit back before the push:
@@ -147,7 +147,7 @@ Missing description and license on ghcr.io
 
 ## Pull requests
 
-The pull request workflow builds every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`.
+The pull request workflow builds and tests every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`.
 
 - Pull requests from forks and Dependabot are built, not published
 - A push to a pull request from `main`, `next`, a release branch or a patch branch that changes `release.json` is not built, the release workflow builds it

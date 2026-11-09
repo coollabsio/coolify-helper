@@ -101,3 +101,10 @@ jobs:
           path: ${{ runner.temp }}/image
           if-no-files-found: error
           retention-days: 1
+
+  tests:
+    name: Tests
+    needs: build
+    permissions:
+      contents: read
+    uses: $/.github/workflows/tests.yaml

@@ -1,0 +1,48 @@
+name: Tests
+
+on:
+  workflow_call:
+
+permissions: {}
+
+cache-mode: none
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Test image (${{ matrix.platform }})
+    permissions:
+      contents: read
+    runs-on: ${{ matrix.runner }} # https://github.com/actions/runner-images
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-26.04
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-26.04-arm
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the image
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/image
+
+      - name: Load the image
+        run: tar -cf - -C "$RUNNER_TEMP/image" . | docker load
+
+      - name: Test the image
+        run: scripts/test.sh coollabsio/coolify-helper:test

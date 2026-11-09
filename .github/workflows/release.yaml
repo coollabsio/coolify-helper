@@ -63,7 +63,7 @@ jobs:
     needs: [plan, build]
     permissions:
       contents: write # create the GitHub release and its tag
-      packages: write # push the built images to ghcr.io
+      packages: write # push the tested images to ghcr.io
     environment:
       name: release
       deployment: false
@@ -78,7 +78,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Download the built images
+      - name: Download the tested images
         uses: actions/download-artifact@v8.0.2
         with:
           pattern: image-*
@@ -97,7 +97,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Push the built images
+      - name: Push the tested images
         env:
           TAG: ${{ matrix.release.tag }}
         run: |
