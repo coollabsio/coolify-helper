@@ -147,10 +147,21 @@ Missing description and license on ghcr.io
 
 ## Pull requests
 
-The pull request workflow builds and tests every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`.
+The pull request workflow builds and tests every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`. Its version is `<base>-pr.<number>`:
 
+- Into `next`: `1.4.0-beta.1-pr.1234` after `1.4.0-beta.1`, or `1.5.0-alpha.0-pr.1234` before the first alpha of 1.5.0
+- Into `main`: `1.3.4-pr.1234`
+- PHP's `version_compare` sorts it after its base and before the next prerelease or release
 - Pull requests from forks and Dependabot are built, not published
 - Every pull request gets a comment with the size change of its image compared with the latest release
 - A push to a pull request from `main`, `next`, a release branch or a patch branch that changes `release.json` is not built, the release workflow builds it
-- Pull request builds are published to ghcr.io only, as the Docker Hub credentials are in the `release` environment, which no pull request run can use
-- Pull request builds create no git tag and no GitHub release
+- ghcr.io only, no git tag and no GitHub release, the clean manifests workflow keeps the image while the pull request is open
+
+## Tags
+
+| Tag       | Points at                                                                               |
+| --------- | --------------------------------------------------------------------------------------- |
+| `1.3.0`   | one release, it never moves                                                             |
+| `latest`  | `1.3.0`, the newest stable version                                                      |
+| `preview` | the newest prerelease of the lowest version in prerelease above `latest`, else `latest` |
+| `pr-123`  | the image of the newest push to an open pull request, on ghcr.io only                   |
