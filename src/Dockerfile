@@ -1,8 +1,8 @@
 # Versions
 # https://hub.docker.com/_/alpine
 ARG BASE_IMAGE=alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
-# https://quay.io/repository/minio/aistor/mc?tab=tags
-ARG MINIO_CLIENT_IMAGE=quay.io/minio/aistor/mc:RELEASE.2026-09-19T15-24-59Z@sha256:23511e340cbabf07e6a8b53f9c434975708f22f3c047d6beeddc17bf1a5aed88
+# https://github.com/pgsty/mc/releases
+ARG MINIO_CLIENT_IMAGE=docker.io/pgsty/mc:RELEASE.2026-11-09T00-00-00Z@sha256:82b1c51de77aa7687d4d2c1a2b388dc7752528a64377c48a3e1271dcac39dbcf
 # https://download.docker.com/linux/static/stable/
 ARG DOCKER_VERSION=29.9.2
 # https://github.com/docker/compose/releases
