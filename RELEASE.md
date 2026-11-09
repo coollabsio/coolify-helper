@@ -38,15 +38,15 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 1. Describe the changes under `## [Unreleased]` in `CHANGELOG.md`, they become the release notes
 2. Check what the branch releases:
 
-    ```sh
-    scripts/plan-version.sh
-    ```
+   ```sh
+   scripts/plan-version.sh
+   ```
 
 3. Select the stage and the version, the script commits them and asks to push:
 
-    ```sh
-    scripts/release.sh
-    ```
+   ```sh
+   scripts/release.sh
+   ```
 
 4. The pushed commit changes `release.json`, so it runs the release workflow, which builds and publishes the release and moves its tags
 
@@ -63,22 +63,22 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 
 1. Cut the patch branch from the newest tag of the minor, unless it exists:
 
-    ```sh
-    git switch -c v1.2.x v1.2.1 && git push -u origin v1.2.x
-    ```
+   ```sh
+   git switch -c v1.2.x v1.2.1 && git push -u origin v1.2.x
+   ```
 
 2. Put the fix on a branch named after the version that releases it, cherry-picked from `main` when it is there already:
 
-    ```sh
-    git switch -c fix/<topic>-v1.2.2 origin/v1.2.x && git cherry-pick -x <commit>
-    ```
+   ```sh
+   git switch -c fix/<topic>-v1.2.2 origin/v1.2.x && git cherry-pick -x <commit>
+   ```
 
 3. Merge a pull request from `fix/<topic>-v1.2.2` into `v1.2.x` with a merge commit
 4. Create the release on your checkout of `v1.2.x`:
 
-    ```sh
-    git switch v1.2.x && git pull && scripts/release.sh
-    ```
+   ```sh
+   git switch v1.2.x && git pull && scripts/release.sh
+   ```
 
 5. Repeat with `v1.1.x` and `fix/<topic>-v1.1.4`. 1.0 gets no backports
 
@@ -89,9 +89,9 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 
 1. Set the new version in `src/Dockerfile` and write its checksums:
 
-    ```sh
-    scripts/helper-checksums
-    ```
+   ```sh
+   scripts/helper-checksums
+   ```
 
 2. List the update under `## [Unreleased]` in `CHANGELOG.md` and create a release
 
@@ -99,28 +99,28 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 
 1. Cut `release/v2.0` from `next` and create its prereleases there with `scripts/release.sh`:
 
-    ```sh
-    git switch -c release/v2.0 origin/next && git push -u origin release/v2.0
-    ```
+   ```sh
+   git switch -c release/v2.0 origin/next && git push -u origin release/v2.0
+   ```
 
 2. Merge `main` into `release/v2.0`, so v2 has every fix of v1 and the pull request into `main` has no conflicts:
 
-    ```sh
-    git switch release/v2.0 && git pull && git merge origin/main && git push
-    ```
+   ```sh
+   git switch release/v2.0 && git pull && git merge origin/main && git push
+   ```
 
 3. Keep v1 on a branch of its own:
 
-    ```sh
-    git switch -c v1.x origin/main && git push -u origin v1.x
-    ```
+   ```sh
+   git switch -c v1.x origin/main && git push -u origin v1.x
+   ```
 
 4. Merge a pull request from `release/v2.0` into `main` with a merge commit
 5. Create the release on `main` and select `2.0.0`:
 
-    ```sh
-    git switch main && git pull && scripts/release.sh
-    ```
+   ```sh
+   git switch main && git pull && scripts/release.sh
+   ```
 
 6. Delete `release/v2.0`
 
