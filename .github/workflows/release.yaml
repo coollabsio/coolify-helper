@@ -135,6 +135,8 @@ jobs:
       deployment: false
     runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
     timeout-minutes: 10
+    outputs:
+      tags: ${{ steps.plan.outputs.tags }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
@@ -177,6 +179,33 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           LATEST: ${{ fromJSON(steps.plan.outputs.tags).latest }}
         run: gh release edit "$LATEST" --latest
+
+  cdn:
+    name: Sync CDN
+    needs: tags
+    if: ${{ fromJSON(needs.tags.outputs.tags).latest }}
+    permissions:
+      contents: read
+    environment:
+      name: release
+      deployment: false
+    runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Sync the helper version to the CDN
+        env:
+          GH_TOKEN: ${{ secrets.CDN_TOKEN }}
+          LATEST: ${{ fromJSON(needs.tags.outputs.tags).latest }}
+        run: |
+          gh auth setup-git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          scripts/sync-cdn.sh "${LATEST#v}"
 
   merge:
     name: Merge forward

@@ -51,6 +51,7 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
    ```
 
 4. The pushed commit changes `release.json`, so it runs the release workflow, which builds, tests and publishes the release and moves its tags
+5. A stable release that moves `latest` opens a pull request on the CDN of Coolify, merge it to bring the version to every Coolify instance, see [Coolify instances](#coolify-instances)
 
 > [!TIP]
 > To take the release commit back before the push:
@@ -165,3 +166,19 @@ The pull request workflow builds and tests every pull request and publishes the 
 | `latest`  | `1.3.0`, the newest stable version                                                      |
 | `preview` | the newest prerelease of the lowest version in prerelease above `latest`, else `latest` |
 | `pr-123`  | the image of the newest push to an open pull request, on ghcr.io only                   |
+
+## Coolify instances
+
+Every Coolify instance reads the helper version from `versions.json` on the CDN of Coolify with its update check, every hour by default, and takes a newer one than it has.
+
+1. A stable release that moves `latest` runs `scripts/sync-cdn.sh`, which opens a pull request on [coollabsio/coollabs-cdn](https://github.com/coollabsio/coollabs-cdn) that sets the helper version of the stable, the preview and the nightly channel
+2. Merge the pull request, nothing changes in Coolify
+
+- A prerelease is not synced. To test one, pin it in `upstream.json` on `next` of Coolify, a Coolify build takes the newer of its pin and the version on the CDN
+- The `Sync CDN` job reads the secret `CDN_TOKEN` of the environment `release`, a token that can push a branch and open a pull request on coollabsio/coollabs-cdn
+- `helper.version` on the CDN stays on 1.x, as every Coolify instance takes any newer version from it. Helper 2 gets a key of its own, `helper.v2.version`, which the Coolify versions that work with it read
+- To sync a version yourself:
+
+  ```sh
+  scripts/sync-cdn.sh 1.3.0
+  ```
