@@ -120,7 +120,7 @@ Missing description and license on ghcr.io
 3. Create a release, a tool update publishes nothing on its own
 
 - `scripts/check-upstream.sh` checks a new release against the SHA-256 digests GitHub lists for its assets, the Sigstore build provenance of Docker Compose, Docker Buildx and mise, and the immutable releases of Railpack and mise, then pins the url, size and SHA-256 of each download in `src/upstream.json`
-- The build checks every download against that pin, so it needs no signature of its own
+- The build checks every download against that pin and that each tool reports the pinned version, so it needs no signature of its own
 - mise follows Railpack, `scripts/check-upstream.sh railpack` also pins the mise version the new Railpack runs
 
 ## Release a major version

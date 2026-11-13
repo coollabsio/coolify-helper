@@ -3,7 +3,7 @@
 # Set by scripts/check-upstream.sh
 ARG RAILPACK_VERSION=0.43.0
 
-# Build dependencies
+# Dependencies
 # https://hub.docker.com/_/alpine/tags?name=3.24.4
 ARG BASE_IMAGE=alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 # https://github.com/pgsty/mc/releases
@@ -24,23 +24,18 @@ FROM ${BASE_IMAGE} AS build
 ARG TARGETPLATFORM
 ARG MINIO_CLIENT_VERSION
 
-# binutils, curl, jq and openssl are only used during the build stage, so they are not pinned to a specific version
+# binutils, curl and jq are only used during the build stage, so they are not pinned to a specific version
 # hadolint ignore=DL3018
-RUN apk add --no-cache binutils curl jq openssl
+RUN apk add --no-cache binutils curl jq
 
 WORKDIR /src
 COPY --chmod=0644 upstream.json verify.sh ./
-RUN for tool in $(jq -r 'keys[]' upstream.json); do \
-        curl --proto '=https' --tlsv1.2 -sSfL --retry 3 --retry-all-errors -o "$tool" "$(jq -r --arg tool "$tool" --arg platform "$TARGETPLATFORM" '.[$tool].latest.platforms[$platform].url' upstream.json)" || exit 1; \
-    done \
-    && sh verify.sh
+RUN sh verify.sh
 
-# Assemble the files the final image adds to the base image in /rootfs
 COPY --chmod=0644 rootfs.sh /src/
 RUN sh /src/rootfs.sh
 COPY --from=minio-client /usr/bin/mc /rootfs/usr/bin/mc
 
-# The tools have no package database for the SBOM scanner to read, sbom.sh declares each in its binary
 COPY --chmod=0644 sbom.sh /src/
 RUN version() { jq -r --arg tool "$1" '.[$tool].latest.version' upstream.json; } \
     && sh /src/sbom.sh coollabsio/coolify-helper "Coolify Helper" \
