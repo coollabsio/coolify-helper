@@ -17,6 +17,7 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 | `v1.2.x`       | backports and hotfixes, cut from the newest tag of v1.2    | stable `1.2.x` versions                |
 
 - `main` takes fixes only. A new minor or major reaches it as a merge of `next` or a release branch
+- Merge `next` or a release branch into `main` only right before you release it, on the same day. To freeze a minor for longer, publish an RC on `next` or cut `release/v1.4`
 - `next` and the release branches publish prereleases only, their stable versions are released on `main`
 - Name a branch after what it changes: `fix/<topic>`, `feat/<topic>`, and `fix/<topic>-v1.2.2` for a backport, after the version that releases it
 - Squash merge pull requests from contributors and pull requests with a single change, such as tool updates
@@ -35,20 +36,22 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 > [!NOTE]
 > `next` publishes prereleases only. For its stable version, merge `next` into `main` with a merge commit and create the release on `main`.
 
-1. Describe the changes under `## [Unreleased]` in `CHANGELOG.md`, they become the release notes
-2. Check what the branch releases:
+1. Describe the changes in change files with `scripts/change.sh`, they become the release notes, see [Change files](#change-files)
+2. Check what the branch releases and the entries it lists:
 
-    ```sh
-    scripts/plan-version.sh
-    ```
+   ```sh
+   scripts/plan-version.sh
+   scripts/change.sh --notes
+   ```
 
 3. Select the stage and the version, the script commits them and asks to push:
 
-    ```sh
-    scripts/release.sh
-    ```
+   ```sh
+   scripts/release.sh
+   ```
 
-4. The pushed commit changes `release.json`, so it runs the release workflow, which builds and publishes the release and moves its tags
+4. The pushed commit changes `release.json`, so it runs the release workflow, which builds, tests and publishes the release and moves its tags
+5. A stable release that moves `latest` opens a pull request on the CDN of Coolify, merge it to bring the version to every Coolify instance, see [Coolify instances](#coolify-instances)
 
 > [!TIP]
 > To take the release commit back before the push:
@@ -57,28 +60,48 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 > scripts/undo-release.sh
 > ```
 
+## Change files
+
+Every change to the image has a file in `.changes/`:
+
+```text
+---
+type: fixed
+commit: 1a2b3c4
+---
+Missing description and license on ghcr.io
+
+- The release index carries the labels of the image as annotations
+```
+
+- `scripts/change.sh` writes a file, it asks for what its flags leave out, and `--notes` prints the entries of the next release
+- `scripts/release.sh` preselects the version the files need and writes them into `CHANGELOG.md`, the release workflow reads its notes from there
+- A prerelease writes the files under `## [Unreleased]`, keeps them and adds its version to the files that have none
+- A stable release writes the files under `## [v1.4.0] - <date>` and removes them
+- `scripts/undo-release.sh` brings the files back as they were
+
 ## Backport a fix
 
 `main` is on 1.3, and 1.1 and 1.2 still get fixes. A fix reaches each of them through a patch branch and a pull request of its own:
 
 1. Cut the patch branch from the newest tag of the minor, unless it exists:
 
-    ```sh
-    git switch -c v1.2.x v1.2.1 && git push -u origin v1.2.x
-    ```
+   ```sh
+   git switch -c v1.2.x v1.2.1 && git push -u origin v1.2.x
+   ```
 
 2. Put the fix on a branch named after the version that releases it, cherry-picked from `main` when it is there already:
 
-    ```sh
-    git switch -c fix/<topic>-v1.2.2 origin/v1.2.x && git cherry-pick -x <commit>
-    ```
+   ```sh
+   git switch -c fix/<topic>-v1.2.2 origin/v1.2.x && git cherry-pick -x <commit>
+   ```
 
 3. Merge a pull request from `fix/<topic>-v1.2.2` into `v1.2.x` with a merge commit
 4. Create the release on your checkout of `v1.2.x`:
 
-    ```sh
-    git switch v1.2.x && git pull && scripts/release.sh
-    ```
+   ```sh
+   git switch v1.2.x && git pull && scripts/release.sh
+   ```
 
 5. Repeat with `v1.1.x` and `fix/<topic>-v1.1.4`. 1.0 gets no backports
 
@@ -87,40 +110,36 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 
 ## Update a tool
 
-1. Set the new version in `src/Dockerfile` and write its checksums:
-
-    ```sh
-    scripts/helper-checksums
-    ```
-
-2. List the update under `## [Unreleased]` in `CHANGELOG.md` and create a release
+1. Pin the new version in `src/upstream.json` with the url, the size and the SHA-256 of the download for each platform, the build verifies every download against them. For Railpack, also set `RAILPACK_VERSION` in `src/Dockerfile` and pin the mise version it runs, from its `core/mise/version.txt`
+2. Describe the update in a change file with `scripts/change.sh` and squash merge a pull request as `build(image): bump dependencies to the latest releases`
+3. Create a release, a tool update publishes nothing on its own
 
 ## Release a major version
 
 1. Cut `release/v2.0` from `next` and create its prereleases there with `scripts/release.sh`:
 
-    ```sh
-    git switch -c release/v2.0 origin/next && git push -u origin release/v2.0
-    ```
+   ```sh
+   git switch -c release/v2.0 origin/next && git push -u origin release/v2.0
+   ```
 
 2. Merge `main` into `release/v2.0`, so v2 has every fix of v1 and the pull request into `main` has no conflicts:
 
-    ```sh
-    git switch release/v2.0 && git pull && git merge origin/main && git push
-    ```
+   ```sh
+   git switch release/v2.0 && git pull && git merge origin/main && git push
+   ```
 
 3. Keep v1 on a branch of its own:
 
-    ```sh
-    git switch -c v1.x origin/main && git push -u origin v1.x
-    ```
+   ```sh
+   git switch -c v1.x origin/main && git push -u origin v1.x
+   ```
 
 4. Merge a pull request from `release/v2.0` into `main` with a merge commit
 5. Create the release on `main` and select `2.0.0`:
 
-    ```sh
-    git switch main && git pull && scripts/release.sh
-    ```
+   ```sh
+   git switch main && git pull && scripts/release.sh
+   ```
 
 6. Delete `release/v2.0`
 
@@ -129,9 +148,37 @@ Every release is tagged `v<version>`, such as `v1.4.0-beta.1`, and publishes the
 
 ## Pull requests
 
-The pull request workflow builds every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`.
+The pull request workflow builds and tests every pull request and publishes the image of a pull request from a branch of this repository as `ghcr.io/coollabsio/coolify-helper:pr-<number>`. Its version is `<base>-pr.<number>`:
 
+- Into `next`: `1.4.0-beta.1-pr.1234` after `1.4.0-beta.1`, or `1.5.0-alpha.0-pr.1234` before the first alpha of 1.5.0
+- Into `main`: `1.3.4-pr.1234`
+- PHP's `version_compare` sorts it after its base and before the next prerelease or release
 - Pull requests from forks and Dependabot are built, not published
+- Every pull request gets a comment with the size change of its image compared with the latest release
 - A push to a pull request from `main`, `next`, a release branch or a patch branch that changes `release.json` is not built, the release workflow builds it
-- Pull request builds are published to ghcr.io only, as the Docker Hub credentials are in the `release` environment, which no pull request run can use
-- Pull request builds create no git tag and no GitHub release
+- ghcr.io only, no git tag and no GitHub release, the clean manifests workflow keeps the image while the pull request is open
+
+## Tags
+
+| Tag       | Points at                                                                               |
+| --------- | --------------------------------------------------------------------------------------- |
+| `1.3.0`   | one release, it never moves                                                             |
+| `latest`  | `1.3.0`, the newest stable version                                                      |
+| `preview` | the newest prerelease of the lowest version in prerelease above `latest`, else `latest` |
+| `pr-123`  | the image of the newest push to an open pull request, on ghcr.io only                   |
+
+## Coolify instances
+
+Every Coolify instance reads the helper version from `versions.json` on the CDN of Coolify with its update check, every hour by default, and takes a newer one than it has.
+
+1. A stable release that moves `latest` runs `scripts/sync-cdn.sh`, which opens a pull request on [coollabsio/coollabs-cdn](https://github.com/coollabsio/coollabs-cdn) that sets the helper version of the stable, the preview and the nightly channel
+2. Merge the pull request, nothing changes in Coolify
+
+- A prerelease is not synced. To test one, pin it in `upstream.json` on `next` of Coolify, a Coolify build takes the newer of its pin and the version on the CDN
+- The `Sync CDN` job reads the secret `CDN_TOKEN` of the environment `release`, a token that can push a branch and open a pull request on coollabsio/coollabs-cdn
+- `helper.version` on the CDN stays on 1.x, as every Coolify instance takes any newer version from it. Helper 2 gets a key of its own, `helper.v2.version`, which the Coolify versions that work with it read
+- To sync a version yourself:
+
+  ```sh
+  scripts/sync-cdn.sh 1.3.0
+  ```
