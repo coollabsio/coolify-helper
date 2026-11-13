@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# https://github.com/railwayapp/railpack/releases, the version src/upstream.json pins
+# Set by scripts/check-upstream.sh
 ARG RAILPACK_VERSION=0.43.0
 
 # Build dependencies

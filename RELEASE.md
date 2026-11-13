@@ -110,9 +110,18 @@ Missing description and license on ghcr.io
 
 ## Update a tool
 
-1. Pin the new version in `src/upstream.json` with the url, the size and the SHA-256 of the download for each platform, the build verifies every download against them. For Railpack, also set `RAILPACK_VERSION` in `src/Dockerfile` and pin the mise version it runs, from its `core/mise/version.txt`
-2. Describe the update in a change file with `scripts/change.sh` and squash merge a pull request as `build(image): bump dependencies to the latest releases`
+1. The check upstream workflow checks every tool twice a day and opens one pull request from `build/bump-dependencies` that pins all new releases with a change file for each, a later run with newer releases updates it. To pin them yourself, check every tool or one on a branch from `main`:
+
+   ```sh
+   git switch -c build/compose-v5.7.1 origin/main && scripts/check-upstream.sh compose
+   ```
+
+2. Squash merge the pull request as `build(image): bump dependencies to the latest releases`
 3. Create a release, a tool update publishes nothing on its own
+
+- `scripts/check-upstream.sh` checks a new release against the SHA-256 digests GitHub lists for its assets, the Sigstore build provenance of Docker Compose, Docker Buildx and mise, and the immutable releases of Railpack and mise, then pins the url, size and SHA-256 of each download in `src/upstream.json`
+- The build checks every download against that pin, so it needs no signature of its own
+- mise follows Railpack, `scripts/check-upstream.sh railpack` also pins the mise version the new Railpack runs
 
 ## Release a major version
 
