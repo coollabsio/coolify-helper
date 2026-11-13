@@ -41,7 +41,8 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: |
           gh auth setup-git
-          scripts/plan-version.sh --build
+          image="$(scripts/plan-version.sh --build)"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build image (${{ matrix.platform }})
