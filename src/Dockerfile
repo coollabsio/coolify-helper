@@ -7,9 +7,9 @@ ARG RAILPACK_VERSION=0.43.0
 # https://hub.docker.com/_/alpine/tags?name=3.24.4
 ARG BASE_IMAGE=alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 # https://github.com/pgsty/mc/releases
-ARG MINIO_CLIENT_VERSION=RELEASE.2026-11-09T00-00-00Z
+ARG MINIO_CLIENT_VERSION=RELEASE.2026-11-12T00-00-00Z
 # https://hub.docker.com/r/pgsty/mc/tags
-ARG MINIO_CLIENT_IMAGE=docker.io/pgsty/mc:${MINIO_CLIENT_VERSION}@sha256:82b1c51de77aa7687d4d2c1a2b388dc7752528a64377c48a3e1271dcac39dbcf
+ARG MINIO_CLIENT_IMAGE=docker.io/pgsty/mc:${MINIO_CLIENT_VERSION}@sha256:b532278b7a3747dbab6fe45eebb40a653efa704e6758e24e9d9ec54fc96c1800
 
 # Set by the build workflow
 ARG IMAGE_VERSION
