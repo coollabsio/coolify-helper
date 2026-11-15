@@ -5,7 +5,8 @@ ARG RAILPACK_VERSION=0.43.0
 
 # Dependencies
 # https://hub.docker.com/_/alpine/tags?name=3.24.4
-ARG BASE_IMAGE=alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+ARG BASE_IMAGE=docker.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+ARG DISTRO=alpine-3.24
 # https://github.com/pgsty/mc/releases
 ARG MINIO_CLIENT_VERSION=RELEASE.2026-11-12T00-00-00Z
 # https://hub.docker.com/r/pgsty/mc/tags
@@ -51,6 +52,7 @@ RUN version() { jq -r --arg tool "$1" '.[$tool].latest.version' upstream.json; }
 FROM ${BASE_IMAGE} AS final
 
 ARG BASE_IMAGE
+ARG DISTRO
 ARG RAILPACK_VERSION
 ARG IMAGE_VERSION
 ARG CREATED
@@ -63,19 +65,25 @@ RUN apk upgrade --no-cache \
 
 COPY --from=build /rootfs/ /
 
-# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.title="Coolify Helper" \
     org.opencontainers.image.description="The tools Coolify runs on every server to build and deploy applications." \
     org.opencontainers.image.version="${IMAGE_VERSION}" \
-    org.opencontainers.image.created="${CREATED}" \
     org.opencontainers.image.revision="${GIT_SHA}" \
+    org.opencontainers.image.created="${CREATED}" \
     org.opencontainers.image.licenses="Apache-2.0" \
-    org.opencontainers.image.authors="coollabsio" \
-    org.opencontainers.image.vendor="coollabsio" \
-    org.opencontainers.image.url="https://hub.docker.com/r/coollabsio/coolify-helper" \
-    org.opencontainers.image.source="https://github.com/coollabsio/coolify-helper" \
+    org.opencontainers.image.authors="coolLabs" \
+    org.opencontainers.image.vendor="coolLabs" \
+    org.opencontainers.image.url="https://hub.docker.com/r/coollabsio/coolify-helper#readme" \
     org.opencontainers.image.documentation="https://github.com/coollabsio/coolify-helper#readme" \
-    org.opencontainers.image.base.name="${BASE_IMAGE}" \
+    org.opencontainers.image.source="https://github.com/coollabsio/coolify-helper#readme" \
+    org.opencontainers.image.base.name="${BASE_IMAGE%@*}" \
+    org.opencontainers.image.base.digest="${BASE_IMAGE#*@}" \
+    io.coolify.image.version="${IMAGE_VERSION}" \
+    io.coolify.image.distro="${DISTRO}" \
+    io.coolify.image.variant="runtime" \
+    io.coolify.image.flavor="" \
+    io.coolify.image.shell="bash,busybox" \
+    io.coolify.image.package-manager="apk" \
     coolify.managed="true"
 
 ENV RAILPACK_VERSION=${RAILPACK_VERSION}
