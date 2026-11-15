@@ -45,8 +45,10 @@ jobs:
       - name: Plan the releases
         id: plan
         env:
+          GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
         run: |
+          gh auth setup-git
           releases="$(scripts/plan-version.sh --release)"
           echo "releases=$releases" | tee -a "$GITHUB_OUTPUT"
 
@@ -63,7 +65,7 @@ jobs:
     needs: [plan, build]
     permissions:
       contents: write # create the GitHub release and its tag
-      packages: write # push the built images to ghcr.io
+      packages: write # push the tested images to ghcr.io
     environment:
       name: release
       deployment: false
@@ -78,26 +80,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Download the built images
+      - name: Download the tested images
         uses: actions/download-artifact@v8.0.2
         with:
           pattern: image-*
           path: ${{ runner.temp }}/images
 
       - name: Log in to ghcr.io
-        uses: docker/login-action@v4.7.0
+        uses: docker/login-action@v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to docker.io
-        uses: docker/login-action@v4.7.0
+        uses: docker/login-action@v4.8.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Push the built images
+      - name: Push the tested images
         env:
           TAG: ${{ matrix.release.tag }}
         run: |
@@ -105,8 +107,11 @@ jobs:
           for index in "$RUNNER_TEMP"/images/*/index.json; do
             sources+=("oci-layout://${index%/index.json}@$(jq -r '.manifests[0].digest' "$index")")
           done
+          labels="$(docker buildx imagetools inspect "${sources[0]}" --format '{{ json .Image.Config.Labels }}' \
+            | jq -r 'to_entries[] | "--annotation=index:\(.key)=\(.value)"')"
+          mapfile -t annotations <<< "$labels"
           for repository in ghcr.io/coollabsio/coolify-helper docker.io/coollabsio/coolify-helper; do
-            docker buildx imagetools create --tag "$repository:${TAG#v}" "${sources[@]}"
+            docker buildx imagetools create "${annotations[@]}" --tag "$repository:${TAG#v}" "${sources[@]}"
           done
 
       - name: Create the GitHub release
@@ -132,6 +137,8 @@ jobs:
       deployment: false
     runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
     timeout-minutes: 10
+    outputs:
+      tags: ${{ steps.plan.outputs.tags }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
@@ -141,19 +148,22 @@ jobs:
 
       - name: Plan the moving tags
         id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          gh auth setup-git
           tags="$(scripts/plan-version.sh --tags)"
           echo "tags=$tags" | tee -a "$GITHUB_OUTPUT"
 
       - name: Log in to ghcr.io
-        uses: docker/login-action@v4.7.0
+        uses: docker/login-action@v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to docker.io
-        uses: docker/login-action@v4.7.0
+        uses: docker/login-action@v4.8.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -174,6 +184,33 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           LATEST: ${{ fromJSON(steps.plan.outputs.tags).latest }}
         run: gh release edit "$LATEST" --latest
+
+  cdn:
+    name: Sync CDN
+    needs: tags
+    if: ${{ fromJSON(needs.tags.outputs.tags).latest }}
+    permissions:
+      contents: read
+    environment:
+      name: release
+      deployment: false
+    runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Sync the helper version to the CDN
+        env:
+          GH_TOKEN: ${{ secrets.CDN_TOKEN }}
+          LATEST: ${{ fromJSON(needs.tags.outputs.tags).latest }}
+        run: |
+          gh auth setup-git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          scripts/sync-cdn.sh "${LATEST#v}"
 
   merge:
     name: Merge forward

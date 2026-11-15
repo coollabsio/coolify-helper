@@ -1,0 +1,105 @@
+name: Check upstream
+
+on:
+  schedule:
+    - cron: "20 7,18 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+cache-mode: none
+
+concurrency:
+  group: check-upstream
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  branches:
+    name: List branches
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
+    timeout-minutes: 10
+    outputs:
+      branches: ${{ steps.branches.outputs.branches }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: List main, the maintenance and the major release branches
+        id: branches
+        run: |
+          git branch --remotes --format='%(refname:lstrip=3)' | grep -xE 'main|v[0-9]+\.x|release/v[0-9]+\.0' \
+            | jq -Rnc '"branches=\([inputs])"' -r >> "$GITHUB_OUTPUT"
+
+  check:
+    name: Check tool releases (${{ matrix.branch }})
+    needs: branches
+    permissions:
+      actions: write # start the build workflow on the branch of the pull request
+      contents: write # push the branch of the pull request
+      pull-requests: write # open the pull request
+    runs-on: ubuntu-26.04 # https://github.com/actions/runner-images
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.branches.outputs.branches) }}
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+
+      - name: Check every tool and pin the new releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-upstream.sh
+
+      - name: Open a pull request for the new releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ matrix.branch }}
+        run: |
+          git diff --quiet && exit 0
+          branch=build/bump-dependencies
+          [ "$BASE" = main ] || branch="$branch-${BASE//\//-}"
+          title="build(image): bump dependencies to the latest releases"
+          gh auth setup-git
+          open_pr="$(gh pr list --base "$BASE" --head "$branch" --json url --jq '.[0].url // empty')"
+          if [ -n "$open_pr" ] && git fetch --quiet --depth 1 origin "$branch" && git diff --quiet FETCH_HEAD -- src/upstream.json; then
+            echo "$open_pr pins these releases already"
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/body.md" <<BODY
+          Updates the tools to their latest releases, \`scripts/check-upstream.sh\` verified every download against its release, see the [check]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).
+
+          ## Changes
+
+          $(jq -r --argjson old "$(git show HEAD:src/upstream.json)" 'to_entries[] | .value.latest as $new | $old[.key].latest.version as $from | select($new.version != $from)
+            | ($new.platforms["linux/amd64"].url | if startswith("https://github.com/") then sub("/download/(?<tag>[^/]+)/.*"; "/tag/\(.tag)") else "https://docs.docker.com/engine/release-notes/" end) as $notes
+            | "- Bump \(.key) from v\($from) to v\($new.version), see its [release notes](\($notes))"' src/upstream.json)
+
+          > [!IMPORTANT]
+          > Squash merge this PR to keep the commit history clean.
+          BODY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$branch"
+          git add --all
+          git commit --quiet --message "$title"
+          git push --quiet --force --set-upstream origin "$branch"
+          if [ -n "$open_pr" ]; then
+            gh pr edit "$open_pr" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --base "$BASE" --head "$branch" --title "$title" --label bot/upstream --body-file "$RUNNER_TEMP/body.md"
+          fi
+          gh workflow run build.yaml --ref "$branch"
