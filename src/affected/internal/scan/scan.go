@@ -254,12 +254,24 @@ func (s *scanner) scanFiles(ctx context.Context, entries []tree.Entry) ([]ref, e
 	jobs := make(chan tree.Entry)
 	var mu sync.Mutex
 	var out []ref
+	var panicked error
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			var local []ref
+			defer func() {
+				// A panic in a worker would end the process with exit code 2, which
+				// means invalid input: fail the scan instead.
+				if r := recover(); r != nil {
+					mu.Lock()
+					panicked = fmt.Errorf("internal error while scanning: %v", r)
+					mu.Unlock()
+					for range jobs {
+					}
+				}
+			}()
 			for e := range jobs {
 				local = append(local, s.scanEntry(e)...)
 			}
@@ -282,6 +294,9 @@ loop:
 	wg.Wait()
 	if err != nil {
 		return nil, err
+	}
+	if panicked != nil {
+		return nil, panicked
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].from != out[j].from {

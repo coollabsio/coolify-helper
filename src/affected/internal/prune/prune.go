@@ -45,9 +45,14 @@ func Run(opt Options) *api.PruneResponse {
 		name := e.Name()
 		full := filepath.Join(opt.Root, name)
 		// Leftovers of an interrupted first clone.
-		if strings.Contains(name, ".git.tmp-") {
-			if info, err := os.Lstat(full); err == nil && opt.Now.Sub(info.ModTime()) > 24*time.Hour {
-				_ = os.RemoveAll(full)
+		if key, _, ok := strings.Cut(name, ".git.tmp-"); ok {
+			// The next evaluate of the key removes it too; prune removes those of
+			// keys that are not evaluated again, when nobody holds the lock.
+			if info, err := os.Lstat(full); err == nil && opt.Now.Sub(info.ModTime()) > time.Hour && api.IsMirrorKey(key) {
+				if lock, ok, _ := gitx.TryLock(gitx.LockPathOf(opt.Root, key)); ok {
+					_ = os.RemoveAll(full)
+					lock.Release()
+				}
 			}
 			continue
 		}

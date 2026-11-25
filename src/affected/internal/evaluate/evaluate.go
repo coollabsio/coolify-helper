@@ -302,6 +302,9 @@ func run(ctx context.Context, req *api.EvaluateRequest, opt Options, st *state, 
 			if err == nil {
 				base, err = m.MergeBase(ctx, req.After, tip)
 			}
+			if ctx.Err() != nil {
+				return
+			}
 			if err != nil || base == "" {
 				st.decide(deploy(a.ID, api.ReasonBaseUnreachable, fmt.Sprintf("No merge base with %s was found.", *a.MergeBaseRef), nil))
 				continue
@@ -339,6 +342,11 @@ func run(ctx context.Context, req *api.EvaluateRequest, opt Options, st *state, 
 			continue
 		}
 		d := computeDiff(ctx, m, ab.base, req.After, lim)
+		if ctx.Err() != nil {
+			// A git command killed by the deadline looks like a missing base: leave the
+			// applications to the timeout instead.
+			return
+		}
 		diffs[ab.base] = d
 		st.setDiff(ab.base, d.public)
 	}

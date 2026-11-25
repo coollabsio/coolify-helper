@@ -69,6 +69,13 @@ func DestRef(ref string) string {
 // that is renamed into place by Commit), and points origin at the request URL.
 // It reports whether the mirror is new.
 func (m *Mirror) Ensure(ctx context.Context) (bool, error) {
+	// The caller holds the lock: a temporary mirror of this key is the leftover of
+	// a run that was killed during its first fetch.
+	if stale, _ := filepath.Glob(GitDirOf(m.Root, m.Key) + ".tmp-*"); len(stale) > 0 {
+		for _, d := range stale {
+			_ = os.RemoveAll(d)
+		}
+	}
 	if m.Exists() {
 		return false, m.configure(ctx, m.Git)
 	}

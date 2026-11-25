@@ -113,12 +113,28 @@ func TestInvalidRequests(t *testing.T) {
 	}
 }
 
+func TestAllowedConfig(t *testing.T) {
+	for _, k := range []string{"url.https://x-access-token:T@github.com/.insteadOf", "url.git@github.com:.pushInsteadOf",
+		"http.extraHeader", "http.https://github.com/.extraHeader", "http.sslVerify", "http.sslCAInfo", "http.proxy"} {
+		if !allowedConfig(k) {
+			t.Errorf("rejected %q", k)
+		}
+	}
+	for _, k := range []string{"hook.a.command", "credential.helper", "core.sshCommand", "core.hooksPath", "protocol.file.allow",
+		"include.path", "url.x.y", "http.cookieFile", "remote.origin.url", "uploadpack.packObjectsHook"} {
+		if allowedConfig(k) {
+			t.Errorf("allowed %q", k)
+		}
+	}
+}
+
 func TestValidURL(t *testing.T) {
 	good := []string{"https://github.com/acme/mono.git", "https://github.com/acme/mono", "http://gitea.local:3000/a/b.git",
 		"ssh://git@github.com:22/acme/mono.git", "git@github.com:acme/mono.git", "git@gitlab.example.com:group/sub/repo.git",
-		"https://user:pass@example.com/a.git"}
+		"ssh://deploy@example.com/a.git"}
 	bad := []string{"", "file:///x", "/x", "x", "ext::x", "git@github.com:/abs", "https://github.com", "https://exa mple.com/a",
-		"-oProxyCommand=x", "git://github.com/a/b", "ftp://x/y"}
+		"-oProxyCommand=x", "git://github.com/a/b", "ftp://x/y", "https://user:pass@example.com/a.git",
+		"https://x-access-token@github.com/a/b.git", "ssh://git:secret@example.com/a.git"}
 	for _, u := range good {
 		if !ValidURL(u) {
 			t.Errorf("rejected %q", u)

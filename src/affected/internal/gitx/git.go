@@ -146,10 +146,13 @@ func (g *Git) RunWith(ctx context.Context, opt RunOptions, args ...string) ([]by
 	}
 	full = append(full, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
-	cmd.Env = baseEnv()
+	// The request's variables first: for duplicates the last one wins, so the
+	// safety settings of baseEnv always apply.
+	cmd.Env = nil
 	for k, v := range g.Env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
+	cmd.Env = append(cmd.Env, baseEnv()...)
 	if opt.NoLazyFetch {
 		cmd.Env = append(cmd.Env, "GIT_NO_LAZY_FETCH=1")
 	}

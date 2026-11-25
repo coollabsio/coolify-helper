@@ -61,6 +61,7 @@ func Run(ctx context.Context, req *api.ResolveRequest, opt Options) (*api.Resolv
 		if err != nil {
 			return nil, err
 		}
+		ct.Offline = true
 		t = ct
 		c = &cache.Cache{Dir: gitx.CacheDirOf(opt.MirrorRoot, req.MirrorKey), ToolVersion: opt.ToolVersion}
 	}

@@ -28,14 +28,29 @@ var deniedEnv = map[string]bool{
 	"GIT_CEILING_DIRECTORIES": true, "GIT_NAMESPACE": true, "GIT_REPLACE_REF_BASE": true,
 	"GIT_NO_REPLACE_OBJECTS": true, "GIT_ATTR_NOSYSTEM": true, "GIT_ATTR_SOURCE": true,
 	"PATH": true, "HOME": true, "LD_PRELOAD": true, "LD_LIBRARY_PATH": true, "IFS": true,
+	"GIT_ASKPASS": true, "SSH_ASKPASS": true, "SSH_ASKPASS_REQUIRE": true, "GIT_EDITOR": true,
+	"GIT_PAGER": true, "GIT_EXTERNAL_DIFF": true, "GIT_PROXY_COMMAND": true, "GIT_ALLOW_PROTOCOL_FROM_USER": true,
 }
 
-// deniedConfig are config keys (lower case, or prefixes ending in ".") that the
-// request must not set: the tool sets them itself for safety.
-var deniedConfig = []string{
-	"protocol.", "core.hookspath", "core.fsmonitor", "core.gitproxy", "core.sshcommand.",
-	"include.", "includeif.", "uploadpack.", "remote.origin.", "fetch.", "submodule.",
-	"core.alternaterefscommand", "gc.", "maintenance.", "filter.", "diff.", "core.worktree",
+// allowedConfig reports whether the request may set a git config key: only
+// the URL rewrites and HTTP settings that carry credentials. Everything else,
+// such as hook.*, credential.helper, core.*, protocol.* or include.*, could make
+// git run a program or undo the tool's restrictions.
+func allowedConfig(key string) bool {
+	lower := strings.ToLower(key)
+	switch {
+	case strings.HasPrefix(lower, "url.") && (strings.HasSuffix(lower, ".insteadof") || strings.HasSuffix(lower, ".pushinsteadof")):
+		return true
+	case strings.HasPrefix(lower, "http."):
+		// http.<url>.<name> or http.<name>; names that run programs or read files are denied.
+		name := lower[strings.LastIndexByte(lower, '.')+1:]
+		switch name {
+		case "cookiefile", "savecookies", "sslkey", "sslcert", "sslcertpasswordprotected", "sslkeytype", "sslcerttype":
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 // ValidationError is invalid input (exit code 2).
@@ -76,7 +91,16 @@ func ValidURL(u string) bool {
 	if allowFileURLs && strings.HasPrefix(u, "file:///") && !strings.ContainsAny(u, "\x00\n\r") {
 		return true
 	}
-	return urlRE.MatchString(u) || scpLikeRE.MatchString(u)
+	if m := urlRE.FindStringSubmatch(u); m != nil {
+		// Credentials come through git_config and the mounted files, never in the
+		// URL: it is stored in the mirror's config on the shared volume. A user name
+		// is fine for ssh, not a password, and nothing for http(s).
+		if userinfo := strings.TrimSuffix(m[2], "@"); userinfo != "" && (strings.Contains(userinfo, ":") || m[1] != "ssh") {
+			return false
+		}
+		return true
+	}
+	return scpLikeRE.MatchString(u)
 }
 
 func validLimits(l *Limits) error {
@@ -129,11 +153,8 @@ func ValidateRepository(r *Repository) error {
 		if !ok || !configKeyRE.MatchString(key) || strings.ContainsAny(value, "\x00\n\r") || len(c) > 8192 {
 			return invalid("repository.git_config[%d] must be key=value", i)
 		}
-		lower := strings.ToLower(key)
-		for _, d := range deniedConfig {
-			if lower == strings.TrimSuffix(d, ".") || strings.HasPrefix(lower, d) {
-				return invalid("repository.git_config[%d]: this key is not allowed", i)
-			}
+		if !allowedConfig(key) {
+			return invalid("repository.git_config[%d]: only url.<base>.insteadOf and http.* keys are allowed", i)
 		}
 	}
 	return nil

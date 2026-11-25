@@ -31,7 +31,13 @@ type CommitTree struct {
 	// fetch round trips, for timings and tests.
 	FetchedBlobs int
 	FetchRounds  int
+	// Offline forbids fetching: a read of a blob that is not in the mirror fails
+	// with ErrOffline (resolve reads a mirror without credentials or the lock).
+	Offline bool
 }
+
+// ErrOffline is returned by an offline CommitTree for a blob that is not in the mirror.
+var ErrOffline = errors.New("a blob is not in the mirror and resolve does not fetch")
 
 // NewCommitTree lists a commit of the mirror.
 func NewCommitTree(ctx context.Context, m *Mirror, commit string, budget *tree.Budget, maxMirrorBytes int64) (*CommitTree, error) {
@@ -108,6 +114,10 @@ func (t *CommitTree) ensureLocal(ctx context.Context, oids []string) error {
 	}
 	if t.budget != nil && t.budget.MaxFiles > 0 && len(missing) > t.budget.MaxFiles {
 		return tree.ErrBudget
+	}
+	if t.Offline {
+		// A missing blob is not an absent file: reading it as absent could narrow.
+		return ErrOffline
 	}
 	t.FetchRounds++
 	t.FetchedBlobs += len(missing)
