@@ -44,10 +44,18 @@ main() {
 fuzz() {
 	local target package
 	heading "Fuzzing every target for $FUZZTIME"
+	local log
+	log="$(mktemp)"
 	while read -r package target; do
-		go_run "go test -run '^\$' -fuzz '^$target\$' -fuzztime '$FUZZTIME' $package" > /dev/null || die "$target in $package failed"
+		# Read-write, so that a failing input is saved under testdata/fuzz as a reproducer.
+		if ! MOUNT=rw go_run "go test -run '^\$' -fuzz '^$target\$' -fuzztime '$FUZZTIME' $package" > "$log" 2>&1; then
+			cat "$log" >&2
+			rm -f "$log"
+			die "$target in $package failed, the failing input is in $MODULE/${package#./}/testdata/fuzz/$target"
+		fi
 		ok "$target"
 	done < <(fuzz_targets)
+	rm -f "$log"
 }
 
 # fuzz_targets prints "./package FuzzName" for every fuzz target of the module.
@@ -74,7 +82,7 @@ test_image() {
 
 go_run() {
 	docker run --rm -e GOFLAGS=-buildvcs=false -v coolify-affected-go-mod:/go/pkg/mod -v coolify-affected-go-build:/root/.cache/go-build \
-		-v "$PWD/$MODULE:/src:ro" -w /src --entrypoint sh "$TEST_IMAGE" -c "$1"
+		-v "$PWD/$MODULE:/src:${MOUNT:-ro}" -w /src --entrypoint sh "$TEST_IMAGE" -c "$1"
 }
 
 main

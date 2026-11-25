@@ -9,6 +9,7 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/tree"
 )
 
 // excluded evaluates rules the way the compiled set does (the last matching
@@ -259,7 +260,10 @@ func FuzzDockerignore(f *testing.F) {
 			t.Fatalf("Compile succeeded but New failed: %v", err)
 		}
 		paths := fixed
-		if validPath(path) {
+		// A path with a newline is left out: patternmatcher's ".*" stops at "\n" and
+		// the compiled "**" does not. The callers drop the ignore rules of a tree
+		// with such a path (Untrusted), which TestUntrustedNewlinePaths covers.
+		if validPath(path) && !strings.Contains(path, "\n") {
 			paths = append([]string{path}, fixed...)
 		}
 		for _, p := range paths {
@@ -284,4 +288,14 @@ func validPath(p string) bool {
 		}
 	}
 	return true
+}
+
+func TestUntrustedNewlinePaths(t *testing.T) {
+	tr := tree.NewMem(map[string]string{"Dockerfile": "FROM x", "a\nb/c.txt": "1"})
+	if Untrusted(tr, ".dockerignore", "Dockerfile") == "" {
+		t.Fatal("a newline path does not make the ignore rules untrusted")
+	}
+	if Untrusted(tree.NewMem(map[string]string{"Dockerfile": "FROM x"}), ".dockerignore", "Dockerfile") != "" {
+		t.Fatal("a plain tree is untrusted")
+	}
 }

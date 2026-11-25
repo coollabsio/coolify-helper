@@ -195,7 +195,7 @@ func FuzzSplit(f *testing.F) {
 			if !c.DirKnown && c.Dir != "" {
 				t.Fatalf("dir %q with DirKnown false", c.Dir)
 			}
-			if strings.HasPrefix(c.Dir, "/") || strings.HasPrefix(c.Dir, "..") {
+			if strings.HasPrefix(c.Dir, "/") || c.Dir == ".." || strings.HasPrefix(c.Dir, "../") {
 				t.Fatalf("dir %q escapes", c.Dir)
 			}
 		}
