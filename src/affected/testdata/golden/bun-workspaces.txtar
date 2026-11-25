@@ -1,0 +1,26 @@
+# Bun workspaces (bun.lock): bun --filter anchors the app.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*", "packages/*"]}
+-- bun.lock --
+{"lockfileVersion": 1, "workspaces": {}}
+-- apps/server/package.json --
+{"name": "server", "dependencies": {"db": "workspace:*"}}
+-- apps/server/index.ts --
+1
+-- apps/worker/package.json --
+{"name": "worker"}
+-- apps/worker/index.ts --
+1
+-- packages/db/package.json --
+{"name": "db"}
+-- packages/db/schema.ts --
+1
+-- @commit change --
+-- packages/db/schema.ts --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "server", "base_commit": "{{base}}", "commands": {"build": "bun --filter server build"}},
+  {"id": "worker", "base_commit": "{{base}}", "commands": {"build": "bun run --filter worker build"}}
+]}

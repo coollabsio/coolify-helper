@@ -1,0 +1,62 @@
+{
+	"schema_version": 1,
+	"tool_version": "test",
+	"after": "{{change}}",
+	"timings_ms": {
+		"diff": 0,
+		"fetch": 0,
+		"lock": 0,
+		"resolve": 0,
+		"total": 0
+	},
+	"diffs": {
+		"{{base}}": {
+			"status": "ok",
+			"relation": "ancestor",
+			"changed_files_count": 1,
+			"changed_files_truncated": false,
+			"changed_files": [
+				"docs/x.md"
+			]
+		}
+	},
+	"applications": [
+		{
+			"id": "app",
+			"decision": "deploy",
+			"reason_code": "resolution_failed",
+			"reason": "No limit narrows the set (limit:build_context, limit:compose widened), so every change affects this application.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "docs/x.md",
+					"rule": "build_context"
+				}
+			],
+			"trigger_set": {
+				"compiled": {
+					"version": 1,
+					"all_of": [],
+					"lockfiles": []
+				},
+				"display": [],
+				"limits": [],
+				"resolvers": [],
+				"anchor": null,
+				"anchors": [],
+				"widened": [
+					{
+						"scope": "limit:build_context",
+						"reason": "The Compose file could not be resolved, so files outside the base directory may matter."
+					},
+					{
+						"scope": "limit:compose",
+						"reason": "docker-compose.yml: services.app.build uses a variable"
+					}
+				],
+				"manifest_fingerprint": "sha256:05d2661b08199d7bc04fece50143c8dda49fd4e718cbcf21cf49ccd40cf822fd"
+			}
+		}
+	],
+	"errors": []
+}

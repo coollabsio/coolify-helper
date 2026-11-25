@@ -1,0 +1,27 @@
+# npm workspaces (package-lock.json, "workspaces" array): web depends on shared, admin does not.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*", "libs/*"]}
+-- package-lock.json --
+{"lockfileVersion": 3, "packages": {}}
+-- apps/web/package.json --
+{"name": "web", "dependencies": {"shared": "*"}}
+-- apps/web/index.js --
+require("shared")
+-- apps/admin/package.json --
+{"name": "admin", "dependencies": {"react": "19.0.0"}}
+-- apps/admin/index.js --
+console.log("admin")
+-- libs/shared/package.json --
+{"name": "shared", "version": "1.0.0"}
+-- libs/shared/index.js --
+module.exports = 1
+-- @commit change --
+-- libs/shared/index.js --
+module.exports = 2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "base_directory": "/", "commands": {"build": "npm run build -w web"}},
+  {"id": "admin", "base_commit": "{{base}}", "commands": {"build": "npm run build --workspace=admin"}},
+  {"id": "admin-in-dir", "base_commit": "{{base}}", "base_directory": "/apps/admin"}
+]}

@@ -1,0 +1,86 @@
+# Dockerfile limit, one service per base directory. The change touches docs/ of every service.
+# a: selective COPY → skip. b: COPY . . → widens → deploy. c: COPY ${SRC} → widens → deploy.
+# d: COPY heredoc → widens → deploy. e: multi-stage, only the builder copies src/ → skip.
+-- @commit base --
+-- services/a/Dockerfile --
+FROM node:22
+WORKDIR /app
+COPY package.json ./
+COPY src ./src
+RUN npm install
+-- services/a/package.json --
+{}
+-- services/a/src/index.js --
+1
+-- services/a/docs/readme.md --
+1
+-- services/b/Dockerfile --
+FROM node:22
+COPY . .
+-- services/b/src/index.js --
+1
+-- services/b/docs/readme.md --
+1
+-- services/c/Dockerfile --
+FROM node:22
+ARG SRC=src
+COPY ${SRC} ./
+-- services/c/src/index.js --
+1
+-- services/c/docs/readme.md --
+1
+-- services/d/Dockerfile --
+# syntax=docker/dockerfile:1
+FROM alpine
+COPY <<EOT /etc/motd
+hello
+EOT
+COPY src /src
+-- services/d/src/index.js --
+1
+-- services/d/docs/readme.md --
+1
+-- services/e/Dockerfile --
+FROM golang:1.27 AS builder
+WORKDIR /src
+COPY go.mod ./
+COPY cmd/ ./cmd/
+RUN go build -o /out/app ./cmd/app
+FROM alpine
+COPY --from=builder /out/app /app
+COPY --from=0 /src/go.mod /go.mod
+-- services/e/go.mod --
+module e
+-- services/e/cmd/app/main.go --
+package main
+-- services/e/docs/readme.md --
+1
+-- @commit docs --
+-- services/a/docs/readme.md --
+2
+-- services/b/docs/readme.md --
+2
+-- services/c/docs/readme.md --
+2
+-- services/d/docs/readme.md --
+2
+-- services/e/docs/readme.md --
+2
+-- @commit src --
+-- services/a/src/index.js --
+2
+-- services/e/cmd/app/main.go --
+package main // v2
+-- @request --
+{"after": "{{docs}}", "applications": [
+  {"id": "a", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/a", "dockerfile_location": "/Dockerfile"},
+  {"id": "b", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/b", "dockerfile_location": "/Dockerfile"},
+  {"id": "c", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/c", "dockerfile_location": "/Dockerfile"},
+  {"id": "d", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/d", "dockerfile_location": "/Dockerfile"},
+  {"id": "e", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/e", "dockerfile_location": "/Dockerfile"}
+]}
+-- @request --
+{"after": "{{src}}", "applications": [
+  {"id": "a", "base_commit": "{{docs}}", "build_pack": "dockerfile", "base_directory": "/services/a", "dockerfile_location": "/Dockerfile"},
+  {"id": "e", "base_commit": "{{docs}}", "build_pack": "dockerfile", "base_directory": "/services/e", "dockerfile_location": "/Dockerfile"}
+]}

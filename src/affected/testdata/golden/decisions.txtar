@@ -1,0 +1,27 @@
+# Decision precedence: no base, a preview whose base is the merge base with main, too many changes,
+# and (second request) a fork pull request, which never reads content.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- a.txt --
+1
+-- b.txt --
+1
+-- @commit main --
+-- a.txt --
+2
+-- @commit pr from=base --
+-- b.txt --
+2
+-- @ref refs/heads/main = main --
+-- @ref refs/pull/7/head = pr --
+-- @request --
+{"after": "{{pr}}", "fetch_refs": ["refs/pull/7/head"], "limits": {"max_changed_files": 1, "max_reported_files": 1}, "applications": [
+  {"id": "new-app", "base_commit": null},
+  {"id": "preview", "base_commit": null, "merge_base_ref": "refs/heads/main"},
+  {"id": "too-many", "base_commit": "{{main}}"}
+]}
+-- @request --
+{"after": "{{pr}}", "is_fork": true, "fetch_refs": ["refs/pull/7/head"], "applications": [
+  {"id": "fork", "base_commit": "{{base}}"}
+]}

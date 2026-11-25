@@ -1,0 +1,21 @@
+# Legacy watch paths, with Coolify's semantics: last match wins, "!" excludes, only exclusions include the rest.
+-- @commit base --
+-- apps/web/src/index.ts --
+1
+-- apps/web/README.md --
+1
+-- apps/api/index.ts --
+1
+-- @commit change --
+-- apps/web/src/index.ts --
+2
+-- apps/web/README.md --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "mode": "watch_paths", "watch_paths": "apps/web/**\n!apps/web/**/*.md"},
+  {"id": "docs-only", "base_commit": "{{base}}", "mode": "watch_paths", "watch_paths": "/apps/web/*.md\n"},
+  {"id": "api", "base_commit": "{{base}}", "mode": "watch_paths", "watch_paths": "apps/api/**"},
+  {"id": "exclusions-only", "base_commit": "{{base}}", "mode": "watch_paths", "watch_paths": "!apps/web/**"},
+  {"id": "blank", "base_commit": "{{base}}", "mode": "watch_paths", "watch_paths": "  \n"}
+]}

@@ -1,0 +1,64 @@
+# History shapes. The tree diff is exact for all of them.
+# rewind: main is reset to an older commit (after is an ancestor of base): the undone change in ui deploys web.
+# rewrite: a force push replaces the last commit with one that only touches api: relation diverged, the diff is tree to tree.
+# merge: a merge commit brings in a feature branch that changed ui.
+# rename: a file moves from packages/ui to tools/: the old path is in web's closure, so web deploys.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/*"]
+-- apps/web/package.json --
+{"name": "web", "dependencies": {"ui": "workspace:*"}}
+-- apps/web/index.ts --
+1
+-- apps/api/package.json --
+{"name": "api"}
+-- apps/api/index.ts --
+1
+-- packages/ui/package.json --
+{"name": "ui"}
+-- packages/ui/button.ts --
+1
+-- tools/README.txt --
+tools
+-- @commit ui --
+-- packages/ui/button.ts --
+2
+-- @commit rewrite from=base --
+-- apps/api/index.ts --
+2
+-- @commit feature from=base --
+-- packages/ui/button.ts --
+3
+-- @commit mainline from=base --
+-- apps/api/index.ts --
+3
+-- @commit merge merge=mainline,feature --
+-- packages/ui/button.ts --
+3
+-- @commit rename from=base --
+-- @delete packages/ui/button.ts --
+-- tools/button.ts --
+1
+-- @ref refs/heads/main = merge --
+-- @request --
+{"after": "{{base}}", "applications": [
+  {"id": "web-rewind", "base_commit": "{{ui}}", "commands": {"build": "pnpm --filter web build"}},
+  {"id": "api-rewind", "base_commit": "{{ui}}", "commands": {"build": "pnpm --filter api build"}}
+]}
+-- @request --
+{"after": "{{rewrite}}", "fetch_refs": ["refs/heads/main"], "applications": [
+  {"id": "web-rewrite", "base_commit": "{{ui}}", "commands": {"build": "pnpm --filter web build"}},
+  {"id": "api-rewrite", "base_commit": "{{ui}}", "commands": {"build": "pnpm --filter api build"}}
+]}
+-- @request --
+{"after": "{{merge}}", "applications": [
+  {"id": "web-merge", "base_commit": "{{mainline}}", "commands": {"build": "pnpm --filter web build"}},
+  {"id": "api-merge", "base_commit": "{{mainline}}", "commands": {"build": "pnpm --filter api build"}}
+]}
+-- @request --
+{"after": "{{rename}}", "applications": [
+  {"id": "web-rename", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}},
+  {"id": "api-rename", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter api build"}}
+]}

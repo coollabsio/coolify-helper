@@ -1,0 +1,441 @@
+[
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{global}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{base}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"packages/config/base.json"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "web",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{base}}",
+				"matches": [
+					{
+						"file": "packages/config/base.json",
+						"rule": "global"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "include",
+								"rules": []
+							},
+							{
+								"limit": "workspace",
+								"default": "include",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "apps/web"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": "packages/config"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "README*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "LICENSE*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CHANGELOG*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CONTRIBUTING*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CODE_OF_CONDUCT*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "SECURITY*"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".github"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".gitlab"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".vscode"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".idea"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".husky"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".changeset"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".gitlab-ci.yml"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".editorconfig"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": "CODEOWNERS"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "package.json"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/config/base.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "apps/web/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/config/package.json"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"workspace: apps/web/**",
+						"workspace: !packages/config/**",
+						"workspace: !README*",
+						"workspace: !LICENSE*",
+						"workspace: !CHANGELOG*",
+						"workspace: !CONTRIBUTING*",
+						"workspace: !CODE_OF_CONDUCT*",
+						"workspace: !SECURITY*",
+						"workspace: !.github/**",
+						"workspace: !.gitlab/**",
+						"workspace: !.vscode/**",
+						"workspace: !.idea/**",
+						"workspace: !.husky/**",
+						"workspace: !.changeset/**",
+						"workspace: !.gitlab-ci.yml",
+						"workspace: !.editorconfig",
+						"workspace: !CODEOWNERS",
+						"workspace: package.json",
+						"workspace: packages/config/base.json/**",
+						"workspace: pnpm-workspace.yaml",
+						"workspace: turbo.json",
+						"workspace: apps/web/package.json",
+						"workspace: packages/config/package.json"
+					],
+					"limits": [
+						"build_context",
+						"workspace"
+					],
+					"resolvers": [
+						"pnpm",
+						"turbo"
+					],
+					"anchor": {
+						"resolver": "turbo",
+						"package": "web",
+						"dir": "apps/web",
+						"source": "commands"
+					},
+					"anchors": [
+						{
+							"resolver": "turbo",
+							"package": "web",
+							"dir": "apps/web",
+							"source": "commands"
+						}
+					],
+					"widened": [],
+					"manifest_fingerprint": "sha256:3deb78a1263f1fe909c3cb126891d445d6e70f7ec3e398c32339d67d41eeff13"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{other}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{global}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"packages/config/other.json"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "web",
+				"decision": "skip",
+				"reason_code": "no_match",
+				"reason": "The changed file does not affect this application.",
+				"base": "{{global}}",
+				"matches": [],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "include",
+								"rules": []
+							},
+							{
+								"limit": "workspace",
+								"default": "include",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "apps/web"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": "packages/config"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "README*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "LICENSE*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CHANGELOG*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CONTRIBUTING*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CODE_OF_CONDUCT*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "SECURITY*"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".github"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".gitlab"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".vscode"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".idea"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".husky"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".changeset"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".gitlab-ci.yml"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".editorconfig"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": "CODEOWNERS"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "package.json"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/config/base.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "apps/web/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/config/package.json"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"workspace: apps/web/**",
+						"workspace: !packages/config/**",
+						"workspace: !README*",
+						"workspace: !LICENSE*",
+						"workspace: !CHANGELOG*",
+						"workspace: !CONTRIBUTING*",
+						"workspace: !CODE_OF_CONDUCT*",
+						"workspace: !SECURITY*",
+						"workspace: !.github/**",
+						"workspace: !.gitlab/**",
+						"workspace: !.vscode/**",
+						"workspace: !.idea/**",
+						"workspace: !.husky/**",
+						"workspace: !.changeset/**",
+						"workspace: !.gitlab-ci.yml",
+						"workspace: !.editorconfig",
+						"workspace: !CODEOWNERS",
+						"workspace: package.json",
+						"workspace: packages/config/base.json/**",
+						"workspace: pnpm-workspace.yaml",
+						"workspace: turbo.json",
+						"workspace: apps/web/package.json",
+						"workspace: packages/config/package.json"
+					],
+					"limits": [
+						"build_context",
+						"workspace"
+					],
+					"resolvers": [
+						"pnpm",
+						"turbo"
+					],
+					"anchor": {
+						"resolver": "turbo",
+						"package": "web",
+						"dir": "apps/web",
+						"source": "commands"
+					},
+					"anchors": [
+						{
+							"resolver": "turbo",
+							"package": "web",
+							"dir": "apps/web",
+							"source": "commands"
+						}
+					],
+					"widened": [],
+					"manifest_fingerprint": "sha256:3deb78a1263f1fe909c3cb126891d445d6e70f7ec3e398c32339d67d41eeff13"
+				}
+			}
+		],
+		"errors": []
+	}
+]

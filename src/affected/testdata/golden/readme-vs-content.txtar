@@ -1,0 +1,32 @@
+# Root README.md is a meta file: skip. content/blog/post.md is outside every package: global, deploy.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*"]}
+-- apps/blog/package.json --
+{"name": "blog"}
+-- apps/blog/next.config.mjs --
+export default {}
+-- apps/other/package.json --
+{"name": "other"}
+-- README.md --
+1
+-- .github/workflows/ci.yml --
+1
+-- content/blog/post.md --
+1
+-- @commit readme --
+-- README.md --
+2
+-- .github/workflows/ci.yml --
+2
+-- @commit content --
+-- content/blog/post.md --
+2
+-- @request --
+{"after": "{{readme}}", "applications": [
+  {"id": "blog", "base_commit": "{{base}}", "base_directory": "/", "commands": {"build": "npm run build -w blog"}}
+]}
+-- @request --
+{"after": "{{content}}", "applications": [
+  {"id": "blog", "base_commit": "{{readme}}", "base_directory": "/", "commands": {"build": "npm run build -w blog"}}
+]}

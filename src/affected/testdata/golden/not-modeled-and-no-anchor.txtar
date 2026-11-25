@@ -1,0 +1,30 @@
+# Bazel is detected and not modeled: the workspace limit does not apply. In the second repository state
+# Bazel is gone, but an app whose build runs a root script has no anchor: the workspace limit does not apply either.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*"], "scripts": {"build": "turbo run build"}}
+-- MODULE.bazel --
+module(name = "x")
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/api/package.json --
+{"name": "api"}
+-- apps/api/index.ts --
+1
+-- @commit change --
+-- apps/api/index.ts --
+2
+-- @commit nobazel --
+-- @delete MODULE.bazel --
+-- @commit change2 --
+-- apps/api/index.ts --
+3
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web-bazel", "base_commit": "{{base}}", "commands": {"build": "npm run build -w web"}}
+]}
+-- @request --
+{"after": "{{change2}}", "applications": [
+  {"id": "web-no-anchor", "base_commit": "{{nobazel}}", "commands": {"build": "npm run build"}},
+  {"id": "web-anchored", "base_commit": "{{nobazel}}", "commands": {"build": "npm run build -w web"}}
+]}

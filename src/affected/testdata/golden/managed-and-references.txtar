@@ -1,0 +1,37 @@
+# managed_config_paths always affect the app, even outside its base directory.
+# reference_paths (from scan) include a member that no manifest declares.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*", "packages/*"]}
+-- coolify.json --
+{}
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/web/next.config.mjs --
+import posts from "../../packages/content/index.js"
+-- packages/content/package.json --
+{"name": "content"}
+-- packages/content/index.js --
+1
+-- packages/unrelated/package.json --
+{"name": "unrelated"}
+-- packages/unrelated/index.js --
+1
+-- @commit config --
+-- coolify.json --
+{"a": 1}
+-- @commit content --
+-- packages/content/index.js --
+2
+-- packages/unrelated/index.js --
+2
+-- @request --
+{"after": "{{config}}", "applications": [
+  {"id": "web-dir", "base_commit": "{{base}}", "base_directory": "/apps/web", "managed_config_paths": ["coolify.json"]},
+  {"id": "web-dir-unmanaged", "base_commit": "{{base}}", "base_directory": "/apps/web"}
+]}
+-- @request --
+{"after": "{{content}}", "applications": [
+  {"id": "web-with-reference", "base_commit": "{{config}}", "commands": {"build": "npm run build -w web"}, "reference_paths": ["packages/content"]},
+  {"id": "web-without-reference", "base_commit": "{{config}}", "commands": {"build": "npm run build -w web"}}
+]}

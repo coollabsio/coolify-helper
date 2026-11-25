@@ -1,0 +1,32 @@
+# Turborepo: globalDependencies inside a member that web does not depend on still trigger web.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/*"]
+-- turbo.json --
+{"$schema": "https://turbo.build/schema.json", "globalDependencies": ["packages/config/base.json"], "tasks": {"build": {}}}
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/web/index.ts --
+1
+-- packages/config/package.json --
+{"name": "config"}
+-- packages/config/base.json --
+{}
+-- packages/config/other.json --
+{}
+-- @commit global --
+-- packages/config/base.json --
+{"strict": true}
+-- @commit other --
+-- packages/config/other.json --
+{"strict": true}
+-- @request --
+{"after": "{{global}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "turbo run build --filter=web"}}
+]}
+-- @request --
+{"after": "{{other}}", "applications": [
+  {"id": "web", "base_commit": "{{global}}", "commands": {"build": "turbo run build --filter=web"}}
+]}

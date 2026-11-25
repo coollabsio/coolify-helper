@@ -1,0 +1,22 @@
+# A lockfile change is global. Lockfile scoping comes in Phase 2: until then it affects every app that uses it.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*"]
+-- pnpm-lock.yaml --
+lockfileVersion: '9.0'
+importers: {}
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/api/package.json --
+{"name": "api"}
+-- @commit lock --
+-- pnpm-lock.yaml --
+lockfileVersion: '9.0'
+importers:
+  apps/api: {}
+-- @request --
+{"after": "{{lock}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}}
+]}

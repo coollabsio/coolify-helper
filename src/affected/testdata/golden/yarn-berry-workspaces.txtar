@@ -1,0 +1,35 @@
+# Yarn Berry ("workspaces": {"packages": …}, .yarnrc.yml): a change in .yarnrc.yml is global.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "packageManager": "yarn@4.5.0", "workspaces": {"packages": ["packages/*"]}}
+-- yarn.lock --
+__metadata:
+  version: 8
+-- .yarnrc.yml --
+nodeLinker: node-modules
+-- packages/site/package.json --
+{"name": "site", "dependencies": {"theme": "workspace:^"}}
+-- packages/site/src/index.js --
+1
+-- packages/theme/package.json --
+{"name": "theme"}
+-- packages/theme/src/index.js --
+1
+-- packages/cli/package.json --
+{"name": "cli"}
+-- packages/cli/src/index.js --
+1
+-- @commit cli --
+-- packages/cli/src/index.js --
+2
+-- @commit yarnrc --
+-- .yarnrc.yml --
+nodeLinker: pnp
+-- @request --
+{"after": "{{cli}}", "applications": [
+  {"id": "site", "base_commit": "{{base}}", "commands": {"build": "yarn workspace site build"}}
+]}
+-- @request --
+{"after": "{{yarnrc}}", "applications": [
+  {"id": "site", "base_commit": "{{cli}}", "commands": {"build": "yarn workspace site build"}}
+]}

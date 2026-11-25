@@ -1,0 +1,555 @@
+[
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{docs}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{base}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 5,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"services/a/docs/readme.md",
+					"services/b/docs/readme.md",
+					"services/c/docs/readme.md",
+					"services/d/docs/readme.md",
+					"services/e/docs/readme.md"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "a",
+				"decision": "skip",
+				"reason_code": "no_match",
+				"reason": "None of the 5 changed files affect this application.",
+				"base": "{{base}}",
+				"matches": [],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile"
+									}
+								]
+							},
+							{
+								"limit": "dockerfile",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a/src"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/a/**",
+						"build_context: services/a/Dockerfile",
+						"dockerfile: services/a/package.json/**",
+						"dockerfile: services/a/src/**",
+						"dockerfile: services/a/Dockerfile",
+						"dockerfile: services/a/Dockerfile.dockerignore",
+						"dockerfile: services/a/.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"dockerfile"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:238a8ffa82c245017b5b42a82297fb6a69b90a42ebde1f4004c103768e68bd95"
+				}
+			},
+			{
+				"id": "b",
+				"decision": "deploy",
+				"reason_code": "resolution_failed",
+				"reason": "Only the build context narrows the set (limit:dockerfile widened), and 1 of the 5 changed files is in it.",
+				"base": "{{base}}",
+				"matches": [
+					{
+						"file": "services/b/docs/readme.md",
+						"rule": "build_context"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/b"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/b/Dockerfile"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/b/**",
+						"build_context: services/b/Dockerfile"
+					],
+					"limits": [
+						"build_context"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [
+						{
+							"scope": "limit:dockerfile",
+							"reason": "services/b/Dockerfile:2: COPY reads the whole build context"
+						}
+					],
+					"manifest_fingerprint": "sha256:55a58f6903e1dc03fe066d4a79046f23abc4d411a293122cb84005580a02a2f6"
+				}
+			},
+			{
+				"id": "c",
+				"decision": "deploy",
+				"reason_code": "resolution_failed",
+				"reason": "Only the build context narrows the set (limit:dockerfile widened), and 1 of the 5 changed files is in it.",
+				"base": "{{base}}",
+				"matches": [
+					{
+						"file": "services/c/docs/readme.md",
+						"rule": "build_context"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/c"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/c/Dockerfile"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/c/**",
+						"build_context: services/c/Dockerfile"
+					],
+					"limits": [
+						"build_context"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [
+						{
+							"scope": "limit:dockerfile",
+							"reason": "services/c/Dockerfile:3: COPY source \"${SRC}\" uses a variable"
+						}
+					],
+					"manifest_fingerprint": "sha256:165c5a1b3438c09242c84a6891f9291748d4072ac9372bc8a161e0e76919e1b8"
+				}
+			},
+			{
+				"id": "d",
+				"decision": "deploy",
+				"reason_code": "resolution_failed",
+				"reason": "Only the build context narrows the set (limit:dockerfile widened), and 1 of the 5 changed files is in it.",
+				"base": "{{base}}",
+				"matches": [
+					{
+						"file": "services/d/docs/readme.md",
+						"rule": "build_context"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/d"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/d/Dockerfile"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/d/**",
+						"build_context: services/d/Dockerfile"
+					],
+					"limits": [
+						"build_context"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [
+						{
+							"scope": "limit:dockerfile",
+							"reason": "services/d/Dockerfile:3: COPY uses a heredoc"
+						}
+					],
+					"manifest_fingerprint": "sha256:62e2e27b695924042ca6c8214c86dfda103f647c1f9af18f91bdd8a1b7da0c98"
+				}
+			},
+			{
+				"id": "e",
+				"decision": "skip",
+				"reason_code": "no_match",
+				"reason": "None of the 5 changed files affect this application.",
+				"base": "{{base}}",
+				"matches": [],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile"
+									}
+								]
+							},
+							{
+								"limit": "dockerfile",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e/go.mod"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e/cmd"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/e/**",
+						"build_context: services/e/Dockerfile",
+						"dockerfile: services/e/go.mod/**",
+						"dockerfile: services/e/cmd/**",
+						"dockerfile: services/e/Dockerfile",
+						"dockerfile: services/e/Dockerfile.dockerignore",
+						"dockerfile: services/e/.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"dockerfile"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:fda8d0f199a7abf12f67a440633f4071450a6640d9725a24372da2a0d1dd4a1e"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{src}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{docs}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 2,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"services/a/src/index.js",
+					"services/e/cmd/app/main.go"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "a",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "1 of the 2 changed files affects this application.",
+				"base": "{{docs}}",
+				"matches": [
+					{
+						"file": "services/a/src/index.js",
+						"rule": "dockerfile"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile"
+									}
+								]
+							},
+							{
+								"limit": "dockerfile",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/a/src"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/a/**",
+						"build_context: services/a/Dockerfile",
+						"dockerfile: services/a/package.json/**",
+						"dockerfile: services/a/src/**",
+						"dockerfile: services/a/Dockerfile",
+						"dockerfile: services/a/Dockerfile.dockerignore",
+						"dockerfile: services/a/.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"dockerfile"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:238a8ffa82c245017b5b42a82297fb6a69b90a42ebde1f4004c103768e68bd95"
+				}
+			},
+			{
+				"id": "e",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "1 of the 2 changed files affects this application.",
+				"base": "{{docs}}",
+				"matches": [
+					{
+						"file": "services/e/cmd/app/main.go",
+						"rule": "dockerfile"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile"
+									}
+								]
+							},
+							{
+								"limit": "dockerfile",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e/go.mod"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "services/e/cmd"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: services/e/**",
+						"build_context: services/e/Dockerfile",
+						"dockerfile: services/e/go.mod/**",
+						"dockerfile: services/e/cmd/**",
+						"dockerfile: services/e/Dockerfile",
+						"dockerfile: services/e/Dockerfile.dockerignore",
+						"dockerfile: services/e/.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"dockerfile"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:fda8d0f199a7abf12f67a440633f4071450a6640d9725a24372da2a0d1dd4a1e"
+				}
+			}
+		],
+		"errors": []
+	}
+]

@@ -1,0 +1,20 @@
+# Compose with a variable in a build context: the compose limit widens and the whole repository counts.
+-- @commit base --
+-- docker-compose.yml --
+services:
+  app:
+    build: ./${APP_DIR:-app}
+-- app/Dockerfile --
+FROM alpine
+COPY . .
+-- app/a.txt --
+1
+-- docs/x.md --
+1
+-- @commit change --
+-- docs/x.md --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "app", "base_commit": "{{base}}", "build_pack": "dockercompose", "docker_compose_location": "/docker-compose.yml"}
+]}

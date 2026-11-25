@@ -1,0 +1,30 @@
+# Nx: project.json projects; web has implicitDependencies on shared-config, admin does not.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- package-lock.json --
+{"lockfileVersion": 3}
+-- nx.json --
+{"namedInputs": {"sharedGlobals": ["{workspaceRoot}/babel.config.json"]}}
+-- babel.config.json --
+{}
+-- apps/web/project.json --
+{"name": "web", "implicitDependencies": ["shared-config"]}
+-- apps/web/src/main.ts --
+1
+-- apps/admin/project.json --
+{"name": "admin"}
+-- apps/admin/src/main.ts --
+1
+-- libs/shared-config/project.json --
+{"name": "shared-config"}
+-- libs/shared-config/index.ts --
+1
+-- @commit change --
+-- libs/shared-config/index.ts --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "npx nx build web"}},
+  {"id": "admin", "base_commit": "{{base}}", "commands": {"build": "npx nx run admin:build:production"}}
+]}

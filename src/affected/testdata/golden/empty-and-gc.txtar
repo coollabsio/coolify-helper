@@ -1,0 +1,19 @@
+# An empty commit (git commit --allow-empty, a forced redeploy) deploys with empty_diff.
+# A base commit that was force-pushed away and garbage-collected on the remote deploys with base_unreachable.
+-- @commit base --
+-- app/index.js --
+1
+-- @commit gone --
+-- app/index.js --
+2
+-- @commit main from=base --
+-- app/index.js --
+3
+-- @commit empty --
+-- @ref refs/heads/main = empty --
+-- @gc --
+-- @request --
+{"after": "{{empty}}", "applications": [
+  {"id": "forced", "base_commit": "{{main}}"},
+  {"id": "gone", "base_commit": "{{gone}}"}
+]}

@@ -1,0 +1,48 @@
+# .dockerignore with a negation, and a Dockerfile-specific ignore file that takes precedence.
+# x: COPY . . with ".dockerignore": docs is ignored except docs/keep.md.
+# y: build/Dockerfile with build/Dockerfile.dockerignore ignoring tests/; the context .dockerignore (ignoring src) is not used.
+-- @commit base --
+-- services/x/Dockerfile --
+FROM nginx
+COPY . /usr/share/nginx/html
+-- services/x/.dockerignore --
+# docs are not served
+docs
+!docs/keep.md
+-- services/x/index.html --
+1
+-- services/x/docs/other.md --
+1
+-- services/x/docs/keep.md --
+1
+-- services/y/build/Dockerfile --
+FROM node:22
+COPY . .
+-- services/y/build/Dockerfile.dockerignore --
+tests
+-- services/y/.dockerignore --
+src
+-- services/y/src/index.js --
+1
+-- services/y/tests/a.test.js --
+1
+-- @commit other --
+-- services/x/docs/other.md --
+2
+-- services/y/tests/a.test.js --
+2
+-- @commit keep --
+-- services/x/docs/keep.md --
+2
+-- services/y/src/index.js --
+2
+-- @request --
+{"after": "{{other}}", "applications": [
+  {"id": "x", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/x", "dockerfile_location": "/Dockerfile"},
+  {"id": "y", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/services/y", "dockerfile_location": "/build/Dockerfile"}
+]}
+-- @request --
+{"after": "{{keep}}", "applications": [
+  {"id": "x", "base_commit": "{{other}}", "build_pack": "dockerfile", "base_directory": "/services/x", "dockerfile_location": "/Dockerfile"},
+  {"id": "y", "base_commit": "{{other}}", "build_pack": "dockerfile", "base_directory": "/services/y", "dockerfile_location": "/build/Dockerfile"}
+]}

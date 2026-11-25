@@ -1,0 +1,55 @@
+# pnpm: apps/web → @acme/ui → @acme/utils (transitive), apps/api is separate.
+# Request 1: a change in utils deploys web through the chain and skips api.
+# Request 2 (warm mirror, graph from cache): a root README change skips every app.
+# Request 3: an api change deploys api only.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "devDependencies": {"turbo": "^2.0.0"}}
+-- pnpm-workspace.yaml --
+packages:
+  - "apps/*"
+  - "packages/*"
+-- pnpm-lock.yaml --
+lockfileVersion: '9.0'
+-- apps/web/package.json --
+{"name": "@acme/web", "dependencies": {"@acme/ui": "workspace:*", "next": "15.0.0"}}
+-- apps/web/src/page.tsx --
+export default function Page() { return null }
+-- apps/api/package.json --
+{"name": "@acme/api", "dependencies": {"express": "5.0.0"}}
+-- apps/api/src/index.ts --
+console.log("api")
+-- packages/ui/package.json --
+{"name": "@acme/ui", "dependencies": {"@acme/utils": "workspace:^"}}
+-- packages/ui/src/Button.tsx --
+export const Button = 1
+-- packages/utils/package.json --
+{"name": "@acme/utils"}
+-- packages/utils/src/index.ts --
+export const x = 1
+-- README.md --
+# Acme
+-- @commit utils --
+-- packages/utils/src/index.ts --
+export const x = 2
+-- @commit readme --
+-- README.md --
+# Acme monorepo
+-- @commit api --
+-- apps/api/src/index.ts --
+console.log("api v2")
+-- @request --
+{"after": "{{utils}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm turbo run build --filter=@acme/web"}},
+  {"id": "api", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter @acme/api build"}}
+]}
+-- @request --
+{"after": "{{readme}}", "applications": [
+  {"id": "web", "base_commit": "{{utils}}", "commands": {"build": "pnpm turbo run build --filter=@acme/web"}},
+  {"id": "api", "base_commit": "{{utils}}", "commands": {"build": "pnpm --filter @acme/api build"}}
+]}
+-- @request --
+{"after": "{{api}}", "applications": [
+  {"id": "web", "base_commit": "{{readme}}", "commands": {"build": "pnpm turbo run build --filter=@acme/web"}},
+  {"id": "api", "base_commit": "{{readme}}", "commands": {"build": "pnpm --filter @acme/api build"}}
+]}

@@ -1,0 +1,50 @@
+# A submodule pointer bump inside web's directory deploys web; one inside api's skips web.
+# A tracked symlink from web into packages/shared (a member web does not depend on) includes its target.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/*"]
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/web/index.ts --
+1
+-- @gitlink apps/web/vendor/lib --
+1111111111111111111111111111111111111111
+-- @symlink apps/web/shared --
+../../packages/shared
+-- apps/api/package.json --
+{"name": "api"}
+-- @gitlink apps/api/vendor/lib --
+1111111111111111111111111111111111111111
+-- packages/shared/package.json --
+{"name": "shared"}
+-- packages/shared/styles.css --
+1
+-- packages/other/package.json --
+{"name": "other"}
+-- packages/other/x.ts --
+1
+-- @commit webgitlink --
+-- @gitlink apps/web/vendor/lib --
+2222222222222222222222222222222222222222
+-- @commit apigitlink --
+-- @gitlink apps/api/vendor/lib --
+2222222222222222222222222222222222222222
+-- @commit shared --
+-- packages/shared/styles.css --
+2
+-- packages/other/x.ts --
+2
+-- @request --
+{"after": "{{webgitlink}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}}
+]}
+-- @request --
+{"after": "{{apigitlink}}", "applications": [
+  {"id": "web", "base_commit": "{{webgitlink}}", "commands": {"build": "pnpm --filter web build"}}
+]}
+-- @request --
+{"after": "{{shared}}", "applications": [
+  {"id": "web", "base_commit": "{{apigitlink}}", "commands": {"build": "pnpm --filter web build"}}
+]}

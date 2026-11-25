@@ -1,0 +1,86 @@
+{
+	"schema_version": 1,
+	"tool_version": "test",
+	"after": "{{change}}",
+	"timings_ms": {
+		"diff": 0,
+		"fetch": 0,
+		"lock": 0,
+		"resolve": 0,
+		"total": 0
+	},
+	"diffs": {
+		"{{base}}": {
+			"status": "ok",
+			"relation": "ancestor",
+			"changed_files_count": 2,
+			"changed_files_truncated": false,
+			"changed_files": [
+				"apps/web/README.md",
+				"apps/web/src/index.ts"
+			]
+		}
+	},
+	"applications": [
+		{
+			"id": "web",
+			"decision": "deploy",
+			"reason_code": "watch_paths_matched",
+			"reason": "1 of the 2 changed files matches the watch paths.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "apps/web/src/index.ts",
+					"rule": "watch_paths"
+				}
+			]
+		},
+		{
+			"id": "docs-only",
+			"decision": "deploy",
+			"reason_code": "watch_paths_matched",
+			"reason": "1 of the 2 changed files matches the watch paths.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "apps/web/README.md",
+					"rule": "watch_paths"
+				}
+			]
+		},
+		{
+			"id": "api",
+			"decision": "skip",
+			"reason_code": "watch_paths_no_match",
+			"reason": "None of the 2 changed files match the watch paths.",
+			"base": "{{base}}",
+			"matches": []
+		},
+		{
+			"id": "exclusions-only",
+			"decision": "skip",
+			"reason_code": "watch_paths_no_match",
+			"reason": "None of the 2 changed files match the watch paths.",
+			"base": "{{base}}",
+			"matches": []
+		},
+		{
+			"id": "blank",
+			"decision": "deploy",
+			"reason_code": "watch_paths_matched",
+			"reason": "The watch paths are empty, so every change deploys.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "apps/web/README.md",
+					"rule": "watch_paths"
+				},
+				{
+					"file": "apps/web/src/index.ts",
+					"rule": "watch_paths"
+				}
+			]
+		}
+	],
+	"errors": []
+}

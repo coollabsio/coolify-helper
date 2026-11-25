@@ -1,0 +1,46 @@
+{
+	"schema_version": 1,
+	"tool_version": "test",
+	"after": "{{empty}}",
+	"timings_ms": {
+		"diff": 0,
+		"fetch": 0,
+		"lock": 0,
+		"resolve": 0,
+		"total": 0
+	},
+	"diffs": {
+		"{{gone}}": {
+			"status": "base_unreachable",
+			"changed_files_count": 0,
+			"changed_files_truncated": false,
+			"changed_files": []
+		},
+		"{{main}}": {
+			"status": "ok",
+			"relation": "ancestor",
+			"changed_files_count": 0,
+			"changed_files_truncated": false,
+			"changed_files": []
+		}
+	},
+	"applications": [
+		{
+			"id": "forced",
+			"decision": "deploy",
+			"reason_code": "empty_diff",
+			"reason": "The pushed commit has the same files as the base, a forced redeploy.",
+			"base": "{{main}}",
+			"matches": []
+		},
+		{
+			"id": "gone",
+			"decision": "deploy",
+			"reason_code": "base_unreachable",
+			"reason": "The base commit is not reachable in the repository.",
+			"base": "{{gone}}",
+			"matches": []
+		}
+	],
+	"errors": []
+}

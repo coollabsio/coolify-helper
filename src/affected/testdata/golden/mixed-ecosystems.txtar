@@ -1,0 +1,37 @@
+# pnpm and Nx in one repository: Nx implicitDependencies and pnpm dependencies both become edges.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/*"]
+-- nx.json --
+{}
+-- apps/web/package.json --
+{"name": "web", "dependencies": {"ui": "workspace:*"}}
+-- apps/web/project.json --
+{"name": "web", "implicitDependencies": ["e2e-utils"]}
+-- apps/web/index.ts --
+1
+-- packages/ui/package.json --
+{"name": "ui"}
+-- packages/ui/index.ts --
+1
+-- tools/e2e-utils/project.json --
+{"name": "e2e-utils"}
+-- tools/e2e-utils/index.ts --
+1
+-- tools/unused/project.json --
+{"name": "unused"}
+-- tools/unused/index.ts --
+1
+-- @commit change --
+-- packages/ui/index.ts --
+2
+-- tools/e2e-utils/index.ts --
+2
+-- tools/unused/index.ts --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}}
+]}

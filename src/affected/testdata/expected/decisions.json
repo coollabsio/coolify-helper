@@ -1,0 +1,112 @@
+[
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{pr}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{main}}": {
+				"status": "too_many_changes",
+				"relation": "diverged",
+				"changed_files_count": 2,
+				"changed_files_truncated": false,
+				"changed_files": []
+			},
+			"{{base}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"b.txt"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "new-app",
+				"decision": "deploy",
+				"reason_code": "no_base",
+				"reason": "There is no known commit this application was deployed from.",
+				"base": null,
+				"matches": []
+			},
+			{
+				"id": "preview",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{base}}",
+				"matches": [
+					{
+						"file": "b.txt",
+						"rule": "build_context"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "include",
+								"rules": []
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [],
+					"limits": [
+						"build_context"
+					],
+					"resolvers": [
+						"npm"
+					],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:14c7edd7909a69d9b0380af39af0a0e5a81b3bd03523ca4bc59f75d8a46c6048"
+				}
+			},
+			{
+				"id": "too-many",
+				"decision": "deploy",
+				"reason_code": "too_many_changes",
+				"reason": "More files changed than max_changed_files (1).",
+				"base": "{{main}}",
+				"matches": []
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{pr}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {},
+		"applications": [
+			{
+				"id": "fork",
+				"decision": "deploy",
+				"reason_code": "fork_no_narrowing",
+				"reason": "Pull requests from forks always deploy: their content is not read.",
+				"base": null,
+				"matches": []
+			}
+		],
+		"errors": []
+	}
+]

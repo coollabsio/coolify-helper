@@ -1,0 +1,99 @@
+# Compose: base directory /stack. web and api share the ./app context (api with another Dockerfile),
+# api has an additional context ../shared, db mounts ./db/init.sql, web has an env_file, an included
+# file adds a worker that extends a service of common.yaml.
+# Request 1: a change in docs/ and in an unrelated top-level dir skips; request 2: ../shared deploys;
+# request 3: the init.sql mount deploys; request 4: the extended common.yaml deploys.
+-- @commit base --
+-- stack/docker-compose.yaml --
+include:
+  - ./compose.worker.yaml
+services:
+  web:
+    build: ./app
+    env_file: .env.web
+  api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.api
+      additional_contexts:
+        shared: ../shared
+  db:
+    image: postgres:17
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata: {}
+-- stack/compose.worker.yaml --
+services:
+  worker:
+    extends:
+      file: common.yaml
+      service: base
+    command: ["node", "worker.js"]
+-- stack/common.yaml --
+services:
+  base:
+    build: ./worker
+-- stack/.env.web --
+A=1
+-- stack/app/Dockerfile --
+FROM node:22
+COPY src ./src
+-- stack/app/Dockerfile.api --
+FROM node:22
+COPY src ./src
+COPY --from=shared . /shared
+-- stack/app/src/index.js --
+1
+-- stack/app/docs/readme.md --
+1
+-- stack/worker/Dockerfile --
+FROM node:22
+COPY worker.js .
+-- stack/worker/worker.js --
+1
+-- stack/db/init.sql --
+select 1;
+-- stack/notes.txt --
+1
+-- shared/lib.js --
+1
+-- other/thing.txt --
+1
+-- @commit docs --
+-- stack/app/docs/readme.md --
+2
+-- stack/notes.txt --
+2
+-- other/thing.txt --
+2
+-- @commit shared --
+-- shared/lib.js --
+2
+-- @commit initsql --
+-- stack/db/init.sql --
+select 2;
+-- @commit common --
+-- stack/common.yaml --
+services:
+  base:
+    build: ./worker
+    environment:
+      A: "1"
+-- @request --
+{"after": "{{docs}}", "applications": [
+  {"id": "stack", "base_commit": "{{base}}", "build_pack": "dockercompose", "base_directory": "/stack", "docker_compose_location": "/docker-compose.yaml"}
+]}
+-- @request --
+{"after": "{{shared}}", "applications": [
+  {"id": "stack", "base_commit": "{{docs}}", "build_pack": "dockercompose", "base_directory": "/stack", "docker_compose_location": "/docker-compose.yaml"}
+]}
+-- @request --
+{"after": "{{initsql}}", "applications": [
+  {"id": "stack", "base_commit": "{{shared}}", "build_pack": "dockercompose", "base_directory": "/stack", "docker_compose_location": "/docker-compose.yaml"}
+]}
+-- @request --
+{"after": "{{common}}", "applications": [
+  {"id": "stack", "base_commit": "{{initsql}}", "build_pack": "dockercompose", "base_directory": "/stack", "docker_compose_location": "/docker-compose.yaml"}
+]}

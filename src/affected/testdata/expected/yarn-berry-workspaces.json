@@ -1,0 +1,455 @@
+[
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{cli}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{base}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"packages/cli/src/index.js"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "site",
+				"decision": "skip",
+				"reason_code": "no_match",
+				"reason": "The changed file does not affect this application.",
+				"base": "{{base}}",
+				"matches": [],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "include",
+								"rules": []
+							},
+							{
+								"limit": "workspace",
+								"default": "include",
+								"rules": [
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": "packages/cli"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/site"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/theme"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "README*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "LICENSE*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CHANGELOG*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CONTRIBUTING*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CODE_OF_CONDUCT*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "SECURITY*"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".github"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".gitlab"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".vscode"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".idea"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".husky"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".changeset"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".gitlab-ci.yml"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".editorconfig"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": "CODEOWNERS"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/cli/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/site/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/theme/package.json"
+									}
+								]
+							}
+						],
+						"lockfiles": [
+							"yarn.lock"
+						]
+					},
+					"display": [
+						"workspace: !packages/cli/**",
+						"workspace: packages/site/**",
+						"workspace: packages/theme/**",
+						"workspace: !README*",
+						"workspace: !LICENSE*",
+						"workspace: !CHANGELOG*",
+						"workspace: !CONTRIBUTING*",
+						"workspace: !CODE_OF_CONDUCT*",
+						"workspace: !SECURITY*",
+						"workspace: !.github/**",
+						"workspace: !.gitlab/**",
+						"workspace: !.vscode/**",
+						"workspace: !.idea/**",
+						"workspace: !.husky/**",
+						"workspace: !.changeset/**",
+						"workspace: !.gitlab-ci.yml",
+						"workspace: !.editorconfig",
+						"workspace: !CODEOWNERS",
+						"workspace: .yarnrc.yml",
+						"workspace: package.json",
+						"workspace: yarn.lock",
+						"workspace: packages/cli/package.json",
+						"workspace: packages/site/package.json",
+						"workspace: packages/theme/package.json"
+					],
+					"limits": [
+						"build_context",
+						"workspace"
+					],
+					"resolvers": [
+						"yarn"
+					],
+					"anchor": {
+						"resolver": "yarn",
+						"package": "site",
+						"dir": "packages/site",
+						"source": "commands"
+					},
+					"anchors": [
+						{
+							"resolver": "yarn",
+							"package": "site",
+							"dir": "packages/site",
+							"source": "commands"
+						}
+					],
+					"widened": [],
+					"manifest_fingerprint": "sha256:7aedee475561c8528aa587a1d35b027d6d08f49bf85567141e010d21734ab377"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{yarnrc}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{cli}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					".yarnrc.yml"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "site",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{cli}}",
+				"matches": [
+					{
+						"file": ".yarnrc.yml",
+						"rule": "global"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "include",
+								"rules": []
+							},
+							{
+								"limit": "workspace",
+								"default": "include",
+								"rules": [
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": "packages/cli"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/site"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "packages/theme"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "README*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "LICENSE*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CHANGELOG*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CONTRIBUTING*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "CODE_OF_CONDUCT*"
+									},
+									{
+										"action": "exclude",
+										"kind": "glob",
+										"pattern": "SECURITY*"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".github"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".gitlab"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".vscode"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".idea"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".husky"
+									},
+									{
+										"action": "exclude",
+										"kind": "dir",
+										"path": ".changeset"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".gitlab-ci.yml"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": ".editorconfig"
+									},
+									{
+										"action": "exclude",
+										"kind": "file",
+										"path": "CODEOWNERS"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/cli/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/site/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "packages/theme/package.json"
+									}
+								]
+							}
+						],
+						"lockfiles": [
+							"yarn.lock"
+						]
+					},
+					"display": [
+						"workspace: !packages/cli/**",
+						"workspace: packages/site/**",
+						"workspace: packages/theme/**",
+						"workspace: !README*",
+						"workspace: !LICENSE*",
+						"workspace: !CHANGELOG*",
+						"workspace: !CONTRIBUTING*",
+						"workspace: !CODE_OF_CONDUCT*",
+						"workspace: !SECURITY*",
+						"workspace: !.github/**",
+						"workspace: !.gitlab/**",
+						"workspace: !.vscode/**",
+						"workspace: !.idea/**",
+						"workspace: !.husky/**",
+						"workspace: !.changeset/**",
+						"workspace: !.gitlab-ci.yml",
+						"workspace: !.editorconfig",
+						"workspace: !CODEOWNERS",
+						"workspace: .yarnrc.yml",
+						"workspace: package.json",
+						"workspace: yarn.lock",
+						"workspace: packages/cli/package.json",
+						"workspace: packages/site/package.json",
+						"workspace: packages/theme/package.json"
+					],
+					"limits": [
+						"build_context",
+						"workspace"
+					],
+					"resolvers": [
+						"yarn"
+					],
+					"anchor": {
+						"resolver": "yarn",
+						"package": "site",
+						"dir": "packages/site",
+						"source": "commands"
+					},
+					"anchors": [
+						{
+							"resolver": "yarn",
+							"package": "site",
+							"dir": "packages/site",
+							"source": "commands"
+						}
+					],
+					"widened": [],
+					"manifest_fingerprint": "sha256:e996827b4a9cf95d2ea2a329122ffc7bc65ee54f3b07fca6fd5645d3f568959c"
+				}
+			}
+		],
+		"errors": []
+	}
+]

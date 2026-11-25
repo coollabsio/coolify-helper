@@ -1,0 +1,755 @@
+[
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{docs}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{base}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 3,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"other/thing.txt",
+					"stack/app/docs/readme.md",
+					"stack/notes.txt"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "stack",
+				"decision": "skip",
+				"reason_code": "no_match",
+				"reason": "None of the 3 changed files affect this application.",
+				"base": "{{base}}",
+				"matches": [],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									}
+								]
+							},
+							{
+								"limit": "compose",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/worker/worker.js"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/db/init.sql"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env.web"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/common.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/compose.worker.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/docker-compose.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: stack/**",
+						"build_context: shared/**",
+						"compose: stack/app/src/**",
+						"compose: stack/worker/worker.js/**",
+						"compose: shared/**",
+						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile",
+						"compose: stack/worker/Dockerfile",
+						"compose: stack/db/init.sql/**",
+						"compose: stack/.env.web",
+						"compose: stack/.env",
+						"compose: stack/app/.dockerignore",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/common.yaml",
+						"compose: stack/compose.worker.yaml",
+						"compose: stack/docker-compose.yaml",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/Dockerfile.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"compose"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:52ab723ee3791dae7140a0a3cf62bde1286874b3d47d49f07a5eb22e1be5cb26"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{shared}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{docs}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"shared/lib.js"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "stack",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{docs}}",
+				"matches": [
+					{
+						"file": "shared/lib.js",
+						"rule": "compose"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									}
+								]
+							},
+							{
+								"limit": "compose",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/worker/worker.js"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/db/init.sql"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env.web"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/common.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/compose.worker.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/docker-compose.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: stack/**",
+						"build_context: shared/**",
+						"compose: stack/app/src/**",
+						"compose: stack/worker/worker.js/**",
+						"compose: shared/**",
+						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile",
+						"compose: stack/worker/Dockerfile",
+						"compose: stack/db/init.sql/**",
+						"compose: stack/.env.web",
+						"compose: stack/.env",
+						"compose: stack/app/.dockerignore",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/common.yaml",
+						"compose: stack/compose.worker.yaml",
+						"compose: stack/docker-compose.yaml",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/Dockerfile.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"compose"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:52ab723ee3791dae7140a0a3cf62bde1286874b3d47d49f07a5eb22e1be5cb26"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{initsql}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{shared}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"stack/db/init.sql"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "stack",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{shared}}",
+				"matches": [
+					{
+						"file": "stack/db/init.sql",
+						"rule": "compose"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									}
+								]
+							},
+							{
+								"limit": "compose",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/worker/worker.js"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/db/init.sql"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env.web"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/common.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/compose.worker.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/docker-compose.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: stack/**",
+						"build_context: shared/**",
+						"compose: stack/app/src/**",
+						"compose: stack/worker/worker.js/**",
+						"compose: shared/**",
+						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile",
+						"compose: stack/worker/Dockerfile",
+						"compose: stack/db/init.sql/**",
+						"compose: stack/.env.web",
+						"compose: stack/.env",
+						"compose: stack/app/.dockerignore",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/common.yaml",
+						"compose: stack/compose.worker.yaml",
+						"compose: stack/docker-compose.yaml",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/Dockerfile.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"compose"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:52ab723ee3791dae7140a0a3cf62bde1286874b3d47d49f07a5eb22e1be5cb26"
+				}
+			}
+		],
+		"errors": []
+	},
+	{
+		"schema_version": 1,
+		"tool_version": "test",
+		"after": "{{common}}",
+		"timings_ms": {
+			"diff": 0,
+			"fetch": 0,
+			"lock": 0,
+			"resolve": 0,
+			"total": 0
+		},
+		"diffs": {
+			"{{initsql}}": {
+				"status": "ok",
+				"relation": "ancestor",
+				"changed_files_count": 1,
+				"changed_files_truncated": false,
+				"changed_files": [
+					"stack/common.yaml"
+				]
+			}
+		},
+		"applications": [
+			{
+				"id": "stack",
+				"decision": "deploy",
+				"reason_code": "matched",
+				"reason": "The changed file affects this application.",
+				"base": "{{initsql}}",
+				"matches": [
+					{
+						"file": "stack/common.yaml",
+						"rule": "compose"
+					}
+				],
+				"trigger_set": {
+					"compiled": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "build_context",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									}
+								]
+							},
+							{
+								"limit": "compose",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/app/src"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/worker/worker.js"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "stack/db/init.sql"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env.web"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/.env"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/common.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/compose.worker.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/docker-compose.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					},
+					"display": [
+						"build_context: stack/**",
+						"build_context: shared/**",
+						"compose: stack/app/src/**",
+						"compose: stack/worker/worker.js/**",
+						"compose: shared/**",
+						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile",
+						"compose: stack/worker/Dockerfile",
+						"compose: stack/db/init.sql/**",
+						"compose: stack/.env.web",
+						"compose: stack/.env",
+						"compose: stack/app/.dockerignore",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/common.yaml",
+						"compose: stack/compose.worker.yaml",
+						"compose: stack/docker-compose.yaml",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/Dockerfile.dockerignore"
+					],
+					"limits": [
+						"build_context",
+						"compose"
+					],
+					"resolvers": [],
+					"anchor": null,
+					"anchors": [],
+					"widened": [],
+					"manifest_fingerprint": "sha256:2f33b030e29db3ea0431198f1dcf58c23fc0f129eb841fe5894b7f100aeb093b"
+				}
+			}
+		],
+		"errors": []
+	}
+]

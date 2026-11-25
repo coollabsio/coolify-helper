@@ -1,0 +1,32 @@
+# A member with a postinstall script: pnpm install runs it for every app, so its directory is global.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/*"]
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/web/index.ts --
+1
+-- packages/native/package.json --
+{"name": "native", "scripts": {"postinstall": "node build.js"}}
+-- packages/native/build.js --
+1
+-- packages/docs/package.json --
+{"name": "docs"}
+-- packages/docs/index.md --
+1
+-- @commit native --
+-- packages/native/build.js --
+2
+-- @commit docs --
+-- packages/docs/index.md --
+2
+-- @request --
+{"after": "{{native}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}}
+]}
+-- @request --
+{"after": "{{docs}}", "applications": [
+  {"id": "web", "base_commit": "{{native}}", "commands": {"build": "pnpm --filter web build"}}
+]}
