@@ -269,6 +269,8 @@ func run(ctx context.Context, req *api.EvaluateRequest, opt Options, st *state, 
 		if err := m.FetchCommits(ctx, []string{req.After}, lim.MaxMirrorBytes); errors.Is(err, gitx.ErrMirrorTooLarge) {
 			tooLarge()
 			return
+		} else if err != nil {
+			st.addError("fetch %s: %v", req.After, err)
 		}
 	}
 	if !m.HasCommit(ctx, req.After) {
@@ -324,8 +326,12 @@ func run(ctx context.Context, req *api.EvaluateRequest, opt Options, st *state, 
 			// One unreachable base fails the whole fetch: try them one by one.
 			if len(missing) > 1 {
 				for _, b := range missing {
-					_ = m.FetchCommits(ctx, []string{b}, lim.MaxMirrorBytes)
+					if err := m.FetchCommits(ctx, []string{b}, lim.MaxMirrorBytes); err != nil {
+						st.addError("fetch %s: %v", b, err)
+					}
 				}
+			} else {
+				st.addError("fetch %s: %v", missing[0], err)
 			}
 		}
 	}

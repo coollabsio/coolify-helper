@@ -145,3 +145,19 @@ func TestStripJSONC(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+func TestScanWidensOnAnUnreadableManifest(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root reads every file")
+	}
+	dir, commit := worktree(t, monorepo)
+	p := filepath.Join(dir, "packages/ui/package.json")
+	if err := os.Chmod(p, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(p, 0o644)
+	resp := Run(context.Background(), scanRequest(dir, commit, "npm run build -w blog"), Options{ToolVersion: "t"})
+	if len(resp.Widened) == 0 || len(resp.ReferencePaths) != 0 {
+		t.Fatalf("an unreadable member manifest did not widen: %+v", resp)
+	}
+}

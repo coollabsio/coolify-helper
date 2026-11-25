@@ -407,11 +407,20 @@ func TestScriptEdges(t *testing.T) {
 		"packages/schema/package.json": `{"name":"schema"}`,
 		"packages/kit/package.json":    `{"name":"kit"}`,
 		"packages/other/package.json":  `{"name":"other"}`,
+		"apps/site/package.json":       `{"name":"site","scripts":{"build":"vite build && cp -r ../../packages/assets/img public/"}}`,
+		"apps/tool/package.json":       `{"name":"tool","scripts":{"build":"node ../../scripts/gen.mjs && tsc"}}`,
+		"packages/assets/package.json": `{"name":"assets"}`,
 	})
+	all := []string{"apps/admin", "apps/api", "apps/site", "apps/tool", "apps/web", "packages/assets", "packages/docs", "packages/kit", "packages/other", "packages/schema"}
 	for anchor, want := range map[string][]string{
-		"apps/web":   {"apps/web", "packages/docs"},
-		"apps/api":   {"apps/api", "packages/schema"},
-		"apps/admin": {"apps/admin", "packages/kit"},
+		"apps/web": {"apps/web", "packages/docs"},
+		"apps/api": {"apps/api", "packages/schema"},
+		// pnpm -r builds every member.
+		"apps/admin": all,
+		// cp reads another member by its path.
+		"apps/site": {"apps/site", "packages/assets"},
+		// A script outside every member can read any member.
+		"apps/tool": all,
 	} {
 		if got := graph.SortedKeys(closure(g, anchor)); !reflect.DeepEqual(got, want) {
 			t.Errorf("%s: closure = %v, want %v", anchor, got, want)

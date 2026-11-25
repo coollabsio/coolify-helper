@@ -105,7 +105,254 @@
 							"reason": "services/x/Dockerfile:2: COPY reads the whole build context"
 						}
 					],
-					"manifest_fingerprint": "sha256:2e5d45fd47ee6a165261a6a7baedec3c41e0d4cf45c84917426fefc9a91e2811"
+					"manifest_fingerprint": "sha256:2e5d45fd47ee6a165261a6a7baedec3c41e0d4cf45c84917426fefc9a91e2811",
+					"input_patterns": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "inputs",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lockb"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/npm-shrinkwrap.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package-lock.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/pnpm-lock.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".node-version"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".nvmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.cjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.mjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".tool-versions"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "lerna.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "nx.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/project.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/tsconfig*.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/BUILD.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".buckconfig"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "MODULE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bzlmod"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pants.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*/**"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					}
 				}
 			},
 			{
@@ -184,7 +431,254 @@
 							"reason": "services/y/build/Dockerfile:2: COPY reads the whole build context"
 						}
 					],
-					"manifest_fingerprint": "sha256:1fca357aa580e59952b7d2718c5f21c3a7bac5c6c9128cfa984e0c78d6d1cd36"
+					"manifest_fingerprint": "sha256:1fca357aa580e59952b7d2718c5f21c3a7bac5c6c9128cfa984e0c78d6d1cd36",
+					"input_patterns": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "inputs",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lockb"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/npm-shrinkwrap.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package-lock.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/pnpm-lock.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".node-version"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".nvmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.cjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.mjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".tool-versions"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "lerna.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "nx.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/project.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/tsconfig*.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/BUILD.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".buckconfig"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "MODULE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bzlmod"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pants.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*/**"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					}
 				}
 			}
 		],
@@ -301,7 +795,254 @@
 							"reason": "services/x/Dockerfile:2: COPY reads the whole build context"
 						}
 					],
-					"manifest_fingerprint": "sha256:2e5d45fd47ee6a165261a6a7baedec3c41e0d4cf45c84917426fefc9a91e2811"
+					"manifest_fingerprint": "sha256:2e5d45fd47ee6a165261a6a7baedec3c41e0d4cf45c84917426fefc9a91e2811",
+					"input_patterns": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "inputs",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lockb"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/npm-shrinkwrap.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package-lock.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/pnpm-lock.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".node-version"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".nvmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.cjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.mjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".tool-versions"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "lerna.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "nx.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/project.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/tsconfig*.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/BUILD.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".buckconfig"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "MODULE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bzlmod"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pants.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*/**"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					}
 				}
 			},
 			{
@@ -385,7 +1126,254 @@
 							"reason": "services/y/build/Dockerfile:2: COPY reads the whole build context"
 						}
 					],
-					"manifest_fingerprint": "sha256:1fca357aa580e59952b7d2718c5f21c3a7bac5c6c9128cfa984e0c78d6d1cd36"
+					"manifest_fingerprint": "sha256:1fca357aa580e59952b7d2718c5f21c3a7bac5c6c9128cfa984e0c78d6d1cd36",
+					"input_patterns": {
+						"version": 1,
+						"all_of": [
+							{
+								"limit": "inputs",
+								"default": "exclude",
+								"rules": [
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/.yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bun.lockb"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/npm-shrinkwrap.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package-lock.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/package.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/pnpm-lock.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/yarn.lock"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".node-version"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".npmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".nvmrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.cjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".pnpmfile.mjs"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".tool-versions"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".yarnrc.yml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "bunfig.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "lerna.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "mise.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "nx.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pnpm-workspace.yaml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/turbo.jsonc"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/project.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/tsconfig*.json"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/BUILD.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": ".buckconfig"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "MODULE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bazel"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "WORKSPACE.bzlmod"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "pants.toml"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*"
+									},
+									{
+										"action": "include",
+										"kind": "glob",
+										"pattern": "**/*\n*/**"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile.dockerignore"
+									}
+								]
+							}
+						],
+						"lockfiles": []
+					}
 				}
 			}
 		],

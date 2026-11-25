@@ -17,6 +17,7 @@ import (
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/buildcontext"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/compose"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/dockerfile"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/dockerignore"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/workspace"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/pathx"
@@ -142,6 +143,11 @@ type appLimits struct {
 	bc, df, co, ws limits.Result
 	anchor         workspace.Anchor
 	wsWidened      []graph.Widen
+	// contexts are the build contexts of the Dockerfile or Compose services.
+	contexts []string
+	// serviceFiles are the Dockerfiles of the Compose services, their ignore files
+	// and the lowercase fallbacks.
+	serviceFiles []string
 }
 
 func computeLimits(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Application) *appLimits {
@@ -166,6 +172,10 @@ func computeLimits(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Appli
 		l.co = expandSymlinks(ctx, t, withParentLinks(t, out.Result), limits.Compose)
 		for _, s := range out.Services {
 			anchorIn.Services = append(anchorIn.Services, workspace.ComposeService{Name: s.Name, ContextDir: s.ContextDir, DockerfilePath: s.DockerfilePath, RunCommands: s.RunCommands})
+			l.contexts = append(l.contexts, s.ContextDir)
+			if s.DockerfilePath != "" {
+				l.serviceFiles = append(l.serviceFiles, dockerignore.AlwaysIncluded(s.ContextDir, s.DockerfilePath)...)
+			}
 		}
 		defer func() {
 			if out.Failed || l.co.Ruleset == nil {
@@ -255,6 +265,102 @@ func withParentLinks(t tree.Tree, r limits.Result) limits.Result {
 	return r
 }
 
+// inputPatterns is the set of paths whose change can alter the resolution of
+// the trigger set: what the resolvers and limits read, what they would read if
+// it were added (every resolver ran its detection), the tracked symlinks, the
+// base directory itself, and paths with a newline (they drop the .dockerignore
+// rules). When a glob can't be expressed, the set matches everything.
+func inputPatterns(t tree.Tree, ws *Workspace, a *api.Application, l *appLimits, reads []string) match.Set {
+	rs := match.Ruleset{Limit: "inputs", Default: match.Exclude, Rules: []match.Rule{}}
+	var globs []string
+	seen := map[string]bool{}
+	addGlob := func(g string) {
+		if !seen[g] {
+			seen[g] = true
+			globs = append(globs, g)
+		}
+	}
+	for _, r := range ws.Resolvers {
+		for _, g := range r.InputPatterns() {
+			addGlob(g)
+		}
+	}
+	addGlob("**/*\n*")
+	addGlob("**/*\n*/**")
+	for _, g := range globs {
+		if match.ValidateGlob(g) != nil {
+			return match.Set{Version: match.SetVersion, AllOf: []match.Ruleset{}, Lockfiles: []string{}}
+		}
+		rs.Rules = append(rs.Rules, match.IncludeGlob(g, nil))
+	}
+
+	files := append([]string(nil), reads...)
+	switch a.BuildPack {
+	case api.BuildPackDockerfile:
+		files = append(files, dockerignore.AlwaysIncluded(a.BaseDirectory, a.DockerfilePath())...)
+	case api.BuildPackDockerCompose:
+		files = append(files, a.ComposePath())
+	}
+	files = append(files, l.serviceFiles...)
+	for p := a.BaseDirectory; p != ""; p = pathx.Dir(p) {
+		files = append(files, p)
+	}
+	for _, e := range t.Entries() {
+		if e.IsSymlink() {
+			files = append(files, e.Path)
+		}
+	}
+	sort.Strings(files)
+	for _, f := range files {
+		if f == "" || seen["file:"+f] {
+			continue
+		}
+		seen["file:"+f] = true
+		covered := false
+		for _, g := range globs {
+			if match.GlobMatch(g, f) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			rs.Rules = append(rs.Rules, match.IncludeFile(f, nil))
+		}
+	}
+	return match.Set{Version: match.SetVersion, AllOf: []match.Ruleset{rs}, Lockfiles: []string{}}
+}
+
+// withDockerIncludes re-includes, at the end of the workspace ruleset, the
+// paths a Dockerfile or Compose file names explicitly (COPY sources, bind
+// mounts, env files): the build reads them, whatever the workspace says, so a
+// COPY CHANGELOG.md or COPY packages/other must not be excluded as a meta file
+// or a member outside the closure. Whole build contexts are not re-included:
+// they mean "the limit couldn't narrow", not "the build reads all of it".
+func withDockerIncludes(ws *match.Ruleset, contexts []string, docker ...*match.Ruleset) *match.Ruleset {
+	if ws == nil {
+		return nil
+	}
+	out := *ws
+	out.Rules = append([]match.Rule(nil), ws.Rules...)
+	isContext := map[string]bool{}
+	for _, c := range contexts {
+		isContext[c] = true
+	}
+	for _, rs := range docker {
+		if rs == nil {
+			continue
+		}
+		for _, r := range rs.Rules {
+			if r.Action != match.Include || (r.Kind == match.Dir && isContext[r.Path]) {
+				continue
+			}
+			r.Origin = &match.Origin{Rule: rs.Limit}
+			out.Rules = append(out.Rules, r)
+		}
+	}
+	return &out
+}
+
 // literalPrefix returns the directory prefix of a glob before its first wildcard segment.
 func literalPrefix(pattern string) string {
 	var lit []string
@@ -291,6 +397,10 @@ func Build(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Application) 
 	ts := api.TriggerSet{Display: []string{}, Limits: []string{}, Resolvers: append([]string{}, ws.Graph.Resolvers...), Anchors: []api.Anchor{}, Widened: []graph.Widen{}}
 	var sets []match.Ruleset
 	reads := append([]string(nil), ws.Reads...)
+	if a.BuildPack == api.BuildPackDockerfile {
+		l.contexts = append(l.contexts, a.BaseDirectory)
+	}
+	l.ws.Ruleset = withDockerIncludes(l.ws.Ruleset, l.contexts, l.df.Ruleset, l.co.Ruleset)
 	for _, r := range []limits.Result{l.bc, l.df, l.co, l.ws} {
 		ts.Widened = append(ts.Widened, r.Widened...)
 		reads = append(reads, r.Reads...)
@@ -313,6 +423,7 @@ func Build(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Application) 
 	}
 	reads = append(reads, a.ManagedConfigPaths...)
 
+	ts.InputPatterns = inputPatterns(t, ws, a, l, reads)
 	ts.Compiled = match.Set{Version: match.SetVersion, AllOf: sets, Lockfiles: append([]string{}, ws.Graph.Lockfiles...)}
 	if ts.Compiled.AllOf == nil {
 		ts.Compiled.AllOf = []match.Ruleset{}

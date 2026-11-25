@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/api"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/tree"
 )
 
@@ -77,4 +78,73 @@ func TestManagedConfigIsInEveryLimit(t *testing.T) {
 		"coolify.json":        "{}",
 	}, api.Application{BuildPack: api.BuildPackDockerfile, BaseDirectory: "apps/web", DockerfileLocation: str("Dockerfile"), ManagedConfigPaths: []string{"coolify.json"}})
 	expect(t, rs, []string{"coolify.json", "apps/web/src/a"}, []string{"apps/web/README.md"})
+}
+
+func TestDockerfileCopyBeatsWorkspaceExcludes(t *testing.T) {
+	// The Dockerfile copies a root meta file and a member outside web's closure:
+	// both must stay in the set although the workspace limit excludes them.
+	rs := build(t, map[string]string{
+		"package.json":                 `{"name":"root","workspaces":["apps/*","packages/*"]}`,
+		"apps/web/package.json":        `{"name":"web"}`,
+		"apps/web/Dockerfile":          "FROM node:22\nCOPY CHANGELOG.md packages/other apps/web /app/\nRUN npm run build -w web\n",
+		"apps/web/index.js":            "1",
+		"packages/other/package.json":  `{"name":"other"}`,
+		"packages/other/x.js":          "1",
+		"packages/unused/package.json": `{"name":"unused"}`,
+		"packages/unused/x.js":         "1",
+		"CHANGELOG.md":                 "1",
+		"README.md":                    "1",
+	}, api.Application{BuildPack: api.BuildPackDockerfile, DockerfileLocation: str("apps/web/Dockerfile")})
+	if len(rs.TriggerSet.Anchors) == 0 {
+		t.Fatalf("no anchor: %v", rs.TriggerSet.Widened)
+	}
+	expect(t, rs, []string{"CHANGELOG.md", "packages/other/x.js", "apps/web/index.js"}, []string{"README.md", "packages/unused/x.js"})
+}
+
+func TestInputPatterns(t *testing.T) {
+	files := map[string]string{
+		"package.json":          `{"name":"root","workspaces":["apps/*"]}`,
+		"apps/web/package.json": `{"name":"web"}`,
+		"apps/web/Dockerfile":   "FROM node:22\nCOPY src /src\n",
+		"apps/web/src/index.js": "1",
+		"apps/web/shared":       "symlink:../../shared",
+		"shared/x.js":           "1",
+		"stack/compose.yaml":    "include:\n  - ./extra.yaml\nservices:\n  a:\n    image: nginx\n",
+		"stack/extra.yaml":      "services:\n  b:\n    image: redis\n",
+		"stack/notes.txt":       "1",
+	}
+	m := func(t *testing.T, a api.Application) *match.Matcher {
+		t.Helper()
+		rs := build(t, files, a)
+		mt, err := match.Compile(rs.TriggerSet.InputPatterns)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return mt
+	}
+	check := func(t *testing.T, mt *match.Matcher, in, out []string) {
+		t.Helper()
+		for _, p := range in {
+			if !mt.Match(p) {
+				t.Errorf("%s is not an input", p)
+			}
+		}
+		for _, p := range out {
+			if mt.Match(p) {
+				t.Errorf("%s is an input", p)
+			}
+		}
+	}
+	t.Run("dockerfile in a workspace", func(t *testing.T) {
+		mt := m(t, api.Application{BuildPack: api.BuildPackDockerfile, BaseDirectory: "apps/web", DockerfileLocation: str("Dockerfile")})
+		check(t, mt,
+			[]string{"apps/web/Dockerfile", "apps/web/.dockerignore", "apps/web/Dockerfile.dockerignore", "apps/web/dockerfile",
+				"package.json", "apps/new/package.json", "pnpm-lock.yaml", "packages/x/project.json", "turbo.json", "nx.json",
+				"apps/web/shared", "apps/web", "apps", "MODULE.bazel", "a\nb/c.txt"},
+			[]string{"apps/web/src/index.js", "shared/x.js", "README.md"})
+	})
+	t.Run("compose includes", func(t *testing.T) {
+		mt := m(t, api.Application{BuildPack: api.BuildPackDockerCompose, BaseDirectory: "stack", DockerComposeLocation: str("compose.yaml")})
+		check(t, mt, []string{"stack/compose.yaml", "stack/extra.yaml", "stack/.env"}, []string{"stack/notes.txt"})
+	})
 }

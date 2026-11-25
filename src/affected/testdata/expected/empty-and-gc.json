@@ -42,5 +42,7 @@
 			"matches": []
 		}
 	],
-	"errors": []
+	"errors": [
+		"fatal: remote error: upload-pack: not our ref {{gone}}\nfetch {{gone}}: git fetch: fatal: git upload-pack: not our ref {{gone}}"
+	]
 }

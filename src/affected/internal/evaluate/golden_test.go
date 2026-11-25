@@ -9,6 +9,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -93,6 +94,12 @@ func TestGolden(t *testing.T) {
 				schematest.Check(t, "evaluate-response.json", b)
 				for k := range resp.TimingsMS {
 					resp.TimingsMS[k] = 0
+				}
+				// git's stderr comes from several processes, in any order.
+				for i, e := range resp.Errors {
+					lines := strings.Split(e, "\n")
+					sort.Strings(lines)
+					resp.Errors[i] = strings.Join(lines, "\n")
 				}
 				b, _ = json.Marshal(resp)
 				outputs = append(outputs, json.RawMessage(repo.Unrender(string(b))))

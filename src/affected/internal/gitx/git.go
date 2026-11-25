@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"unicode/utf8"
 )
 
 // allowFileProtocol is true only in test builds (see testproto_on.go).
@@ -112,8 +113,13 @@ type Error struct {
 
 func (e *Error) Error() string {
 	msg := strings.TrimSpace(e.Stderr)
-	if i := strings.LastIndexByte(msg, '\n'); i >= 0 && len(msg) > 600 {
-		msg = "…" + msg[len(msg)-600:]
+	if len(msg) > 600 {
+		// The end of stderr says what failed; cut on a rune boundary.
+		cut := len(msg) - 600
+		for cut < len(msg) && !utf8.RuneStart(msg[cut]) {
+			cut++
+		}
+		msg = "…" + msg[cut:]
 	}
 	if msg == "" {
 		msg = e.Err.Error()

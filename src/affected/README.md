@@ -62,11 +62,13 @@ Over a network the round trips dominate, so the one-round-trip approach wins by 
 
 ### Graph cache
 
+`trigger_set.input_patterns` is a compiled set of every path whose change can alter the trigger set: the files the resolvers and limits read, the globs of files they would read if they were added (every `package.json`, lockfile, `turbo.json`, `project.json`, `tsconfig*.json`, Bazel marker…), each Dockerfile with both ignore candidates and the lowercase fallback, the Compose files with their includes and extends, the tracked symlinks, the base directory and its parents, and paths with a newline. When no changed file of a push matches it, a stored trigger set is still valid, so Coolify can decide without running the tool. A push that deploys can add a symlink inside the set whose target the stored set doesn't follow: re-evaluate after a deploy.
+
 `manifest_fingerprint` is sha256 over the sorted `(path, blob id, mode)` of every file the resolution read; a file that is absent counts too, so that its appearance changes the fingerprint. The workspace graph is cached at `/mirrors/<mirror_key>.cache/<sha256(tool version, fingerprint)>.json` (at most 64 entries and 64 MiB, least recently used first). A push that touches no manifest reuses the graph: no blob is fetched and no manifest is parsed.
 
 ## The trigger set
 
-The compiled set (`trigger_set.compiled`) is what Coolify's PHP fast path matches too: `all_of` rulesets, each with a default and ordered `dir`/`file`/`glob` rules where the last match wins. [`testdata/matcher-conformance.json`](testdata/matcher-conformance.json) has 326 compiled and 237 watch-path cases, and [`testdata/php/compiled_matcher.php`](testdata/php/compiled_matcher.php) is a dependency-free PHP implementation that agrees with the Go matcher on all of them and on 300,000 random sets.
+The compiled set (`trigger_set.compiled`) is what Coolify's PHP fast path matches too: `all_of` rulesets, each with a default and ordered `dir`/`file`/`glob` rules where the last match wins. [`testdata/matcher-conformance.json`](testdata/matcher-conformance.json) has 347 compiled and 237 watch-path cases, and [`testdata/php/compiled_matcher.php`](testdata/php/compiled_matcher.php) is a dependency-free PHP implementation that agrees with the Go matcher on all of them and on 300,000 random sets.
 
 | Limit | Applies to | Is |
 | --- | --- | --- |
@@ -109,7 +111,9 @@ Lockfile scoping comes in Phase 2. Until then a changed lockfile matches every a
 - **Blank `watch_paths`** deploy on every change, as Coolify's webhooks do.
 - **Workspace roots** are detected at the repository root only. A workspace in a subdirectory of a repository is not modeled: the base directory still narrows.
 - **Commands are read strictly.** The anchor from commands, and the commands and Dockerfile `RUN` lines next to a Dockerfile, Compose or base-directory anchor, are only trusted when every simple command is understood: a package manager or task runner with a filter, an install, or an inert command (`echo`, `mkdir`, `apk add`…). A command whose effect is unknown, such as `node scripts/build.mjs`, `cp`, `python`, `eval` or a root script, means no anchor, and the workspace limit does not apply. This costs the workspace limit for start commands like `node dist/server.js`; the other limits still narrow. The scripts of every member's `package.json` that name other members are edges.
-- **Members nested in a member** of the closure, and the dependencies of members with install scripts, are never excluded.
+- **Members nested in a member** of the closure, and the dependencies of members with install scripts, are never excluded. A member script that builds every member (`pnpm -r build`), runs in or names a path of another member (`cp -r ../../packages/assets/img public`), or runs a file outside every member, makes those members (or all of them) dependencies.
+- **What a Dockerfile or Compose file names explicitly** (a `COPY CHANGELOG.md`, a `COPY packages/other`, a bind mount) stays in the set even where the workspace limit would exclude it as a meta file or a member outside the closure.
+- **Unreadable files are not absent files:** a tracked file that can't be read from a checkout, or a blob still missing after its fetch, makes the reader widen.
 - **ONBUILD triggers of a base image** can't be known without the image. A base image whose name contains `onbuild` makes the dockerfile limit widen; another base image with ONBUILD triggers is a known gap.
 - **`BUILDKIT_SYNTAX`** as a Compose build argument selects a custom frontend, which can read anything: the compose limit widens. A Dockerfile app's build arguments come from Coolify and are not known to the tool.
 - **Ignore files and Dockerfiles that are symlinks**, and repositories with a newline in a path, make the `.dockerignore` rules widen. Both ignore candidates, and the lowercase `dockerfile` BuildKit falls back to, are always in the set. A base directory that is a symlink, or under one, makes the build context widen.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -35,6 +36,9 @@ type CommitTree struct {
 	// with ErrOffline (resolve reads a mirror without credentials or the lock).
 	Offline bool
 }
+
+// ErrBlobMissing is returned when a blob is still missing after its fetch.
+var ErrBlobMissing = errors.New("a blob is missing from the mirror after the fetch")
 
 // ErrOffline is returned by an offline CommitTree for a blob that is not in the mirror.
 var ErrOffline = errors.New("a blob is not in the mirror and resolve does not fetch")
@@ -148,7 +152,12 @@ func (t *CommitTree) Read(ctx context.Context, paths []string) (map[string][]byt
 		var overBudget bool
 		for _, o := range need {
 			i := info[o]
-			if i.missing || i.typ != "blob" {
+			if i.missing {
+				// The fetch succeeded without this blob: a missing blob is not an
+				// absent file, reading it as absent could narrow.
+				return nil, fmt.Errorf("%w: %s", ErrBlobMissing, o)
+			}
+			if i.typ != "blob" {
 				continue
 			}
 			if !t.budget.Take(i.size) {
@@ -269,7 +278,9 @@ func (t *WorktreeTree) Read(_ context.Context, paths []string) (map[string][]byt
 			return out, tree.ErrBudget
 		}
 		if err != nil {
-			continue
+			// A tracked file that can't be read (deleted, left out of a sparse
+			// checkout, no permission) is not an absent file either.
+			return out, fmt.Errorf("read %s: %w", e.Path, err)
 		}
 		if !t.budget.Take(int64(len(b))) {
 			return out, tree.ErrBudget

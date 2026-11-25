@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/api"
 )
@@ -113,5 +114,13 @@ func TestParseLsTree(t *testing.T) {
 	}
 	if !es[1].IsSymlink() || !es[2].IsGitlink() || es[3].Path != "dir with space/f\tab.txt" {
 		t.Errorf("%+v", es)
+	}
+}
+
+func TestErrorTruncatesLongStderrOnARuneBoundary(t *testing.T) {
+	e := &Error{Args: "fetch", Stderr: strings.Repeat("é", 1000)}
+	msg := e.Error()
+	if len(msg) > 700 || !utf8.ValidString(msg) {
+		t.Fatalf("%d bytes, valid %v", len(msg), utf8.ValidString(msg))
 	}
 }

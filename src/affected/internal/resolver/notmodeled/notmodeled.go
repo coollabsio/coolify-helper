@@ -7,6 +7,7 @@ package notmodeled
 import (
 	"context"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/command"
@@ -43,6 +44,16 @@ func (*Resolver) Pathspecs(p string) bool {
 		return true
 	}
 	return path.Base(p) == "BUILD.bazel" && !strings.Contains("/"+p, "/node_modules/")
+}
+
+// InputPatterns implements resolver.Resolver.
+func (*Resolver) InputPatterns() []string {
+	out := []string{"**/BUILD.bazel"}
+	for p := range rootMarkers {
+		out = append(out, p)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func systems(t tree.Tree) []string {

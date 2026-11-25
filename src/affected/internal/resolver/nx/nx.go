@@ -87,6 +87,12 @@ func (*Resolver) Pathspecs(p string) bool {
 	return js.New().Pathspecs(p)
 }
 
+// InputPatterns implements resolver.Resolver. A tsconfig extends file with
+// another name makes the aliases widen, so it needs no pattern.
+func (*Resolver) InputPatterns() []string {
+	return append([]string{"nx.json", "**/project.json", "**/tsconfig*.json"}, js.New().InputPatterns()...)
+}
+
 // Detect implements resolver.Resolver.
 func (*Resolver) Detect(t tree.Tree) bool {
 	if _, ok := t.Lookup("nx.json"); ok {

@@ -189,6 +189,9 @@ type TriggerSet struct {
 	// ManifestFingerprint is sha256 over the sorted (path, blob id, mode) of every
 	// file the resolution read.
 	ManifestFingerprint string `json:"manifest_fingerprint"`
+	// InputPatterns match every path whose change can alter this trigger set: when
+	// no changed file of a push matches them, the stored set is still valid.
+	InputPatterns match.Set `json:"input_patterns"`
 }
 
 // AppResult is the decision for one application.

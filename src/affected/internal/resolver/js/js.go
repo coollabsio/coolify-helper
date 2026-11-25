@@ -86,6 +86,21 @@ func (*Resolver) Pathspecs(p string) bool {
 	return false
 }
 
+// InputPatterns implements resolver.Resolver. Lockfiles are in: which of them
+// exist picks the package manager.
+func (*Resolver) InputPatterns() []string {
+	var out []string
+	for n := range pathspecNames {
+		out = append(out, "**/"+n)
+	}
+	out = append(out, rootConfigs...)
+	for n := range Lockfiles {
+		out = append(out, "**/"+n)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // Detect implements resolver.Resolver.
 func (*Resolver) Detect(t tree.Tree) bool {
 	if _, ok := t.Lookup("package.json"); ok {
@@ -185,16 +200,31 @@ func (m *Member) Scripts() []string {
 // ("next build"), which read its own files.
 func AddScriptEdges(w *Workspace, lookup, out *graph.Graph, anchor func(command.Command, *graph.Graph) resolver.Anchor, resolvers []string) {
 	edges := map[string][]string{}
+	all := make([]string, 0, len(w.Members))
+	for _, m := range w.Members {
+		all = append(all, m.Dir)
+	}
+	// js runs last-resort checks on commands no resolver claims; the turbo and nx
+	// calls only add what their own tool says.
+	scanPaths := len(resolvers) > 0 && resolvers[0] != "turbo" && resolvers[0] != "nx"
 	for _, m := range w.Members {
 		for _, script := range m.Scripts() {
 			for _, c := range command.SplitFrom(script, m.Dir, true) {
 				a := anchor(c, lookup)
-				if a.Kind != resolver.Anchored {
-					continue
-				}
-				for _, d := range a.Dirs {
-					if d != m.Dir {
-						edges[m.Dir] = append(edges[m.Dir], d)
+				switch a.Kind {
+				case resolver.Anchored:
+					for _, d := range a.Dirs {
+						if d != m.Dir {
+							edges[m.Dir] = append(edges[m.Dir], d)
+						}
+					}
+				case resolver.Unknown:
+					// A workspace-wide run (pnpm -r build) or a filter the parser can't
+					// read: it can build any member.
+					edges[m.Dir] = append(edges[m.Dir], all...)
+				case resolver.NotMine:
+					if scanPaths {
+						edges[m.Dir] = append(edges[m.Dir], pathEdges(w, m.Dir, c, all)...)
 					}
 				}
 			}
@@ -205,6 +235,67 @@ func AddScriptEdges(w *Workspace, lookup, out *graph.Graph, anchor func(command.
 			out.AddPackage(graph.Package{Dir: m.Dir, Resolvers: resolvers, DepDirs: uniq(edges[m.Dir])})
 		}
 	}
+}
+
+// pathEdges looks at a script command of a member that no workspace tool
+// claims (cp, node, vite…). A command that runs in, or names a path in, another
+// member reads that member: an edge. One that runs in an unknown directory, or
+// names a path outside every member (a root script), can read any member:
+// edges to all of them. Paths inside the member itself add nothing.
+func pathEdges(w *Workspace, dir string, c command.Command, all []string) []string {
+	if !c.DirKnown {
+		return all
+	}
+	var out []string
+	consider := func(p string) bool {
+		if pathx.Within(p, dir) {
+			return false
+		}
+		if owner := innermostMember(w, p); owner != "" {
+			out = append(out, owner)
+			return false
+		}
+		return true
+	}
+	if !pathx.Within(c.Dir, dir) && consider(c.Dir) {
+		return all
+	}
+	for _, arg := range c.Argv[1:] {
+		if _, v, ok := strings.Cut(arg, "="); ok && strings.HasPrefix(arg, "-") {
+			arg = v
+		}
+		if !strings.HasPrefix(arg, "../") && !strings.HasPrefix(arg, "/") && arg != ".." {
+			continue
+		}
+		if strings.HasPrefix(arg, "/") {
+			// An absolute path is a path in the image or on the host, not in the repository.
+			continue
+		}
+		p, ok := pathx.Join(c.Dir, arg)
+		if !ok {
+			continue // outside the repository
+		}
+		if consider(p) {
+			return all
+		}
+	}
+	return out
+}
+
+// innermostMember returns the directory of the innermost member that contains p, "" for none.
+func innermostMember(w *Workspace, p string) string {
+	best := ""
+	found := false
+	for _, m := range w.Members {
+		if pathx.Within(p, m.Dir) && (!found || len(m.Dir) > len(best)) {
+			if m.Dir == "" {
+				// The root member contains everything; it is not "another member".
+				continue
+			}
+			best, found = m.Dir, true
+		}
+	}
+	return best
 }
 
 // installCommands are install-like subcommands: they build nothing in particular.
@@ -367,10 +458,16 @@ func pnpmScriptNamed(positional []string) bool {
 	switch {
 	case sub == "run" || sub == "run-script":
 		return len(positional) >= 2
-	case installCommands[sub] || neutralCommands[sub]:
+	case installCommands[sub] || neutralCommands[sub] || pnpmOptionsAnywhere[sub]:
 		return false
 	}
 	return true
+}
+
+// pnpmOptionsAnywhere are pnpm built-ins that read their options after the
+// subcommand too: unlike a script run, they pass nothing through.
+var pnpmOptionsAnywhere = map[string]bool{
+	"deploy": true, "pack": true, "install-test": true, "it": true, "licenses": true, "sbom": true,
 }
 
 func pnpmAnchor(cmd command.Command, g *graph.Graph) resolver.Anchor {

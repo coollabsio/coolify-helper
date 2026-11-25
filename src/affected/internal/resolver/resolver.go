@@ -19,6 +19,10 @@ type Resolver interface {
 	// presence changes Detect or Resolve. The caller prefetches every such blob
 	// in one round trip, and the manifest fingerprint covers them.
 	Pathspecs(path string) bool
+	// InputPatterns are globs (compiled-set syntax) of every path that is, or
+	// would become if it were added, an input of Detect or Resolve. Coolify uses
+	// them to know when a stored trigger set may be stale; more is safe.
+	InputPatterns() []string
 	// Detect reports whether the tree uses the ecosystem. It looks at entries only.
 	Detect(t tree.Tree) bool
 	// Resolve returns the partial graph of the ecosystem. Problems it can recover

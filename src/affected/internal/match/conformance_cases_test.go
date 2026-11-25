@@ -54,6 +54,27 @@ func conformanceCases() builtConformance {
 		"apps/x": T, "apps/x/sub": T, "apps/y": F, "vendor/lib": F, "vendor/other": T, "vendor/lib2": T,
 	})
 
+	// input_patterns: a default-exclude set of resolver globs and read files.
+	inputs := set(ruleset("inputs", Exclude,
+		IncludeGlob("**/package.json", nil),
+		IncludeGlob("**/pnpm-lock.yaml", nil),
+		IncludeGlob("**/tsconfig*.json", nil),
+		IncludeGlob("**/*\n*", nil),
+		IncludeGlob("**/*\n*/**", nil),
+		IncludeFile("pnpm-workspace.yaml", nil),
+		IncludeFile("apps/web/Dockerfile", nil),
+		IncludeFile("apps/web/.dockerignore", nil),
+		IncludeFile("apps/web", nil),
+		IncludeFile("apps", nil),
+	))
+	b.compiled("input patterns", inputs, map[string]bool{
+		"package.json": T, "apps/new/package.json": T, "a/b/c/package.json": T, "package.json.bak": F,
+		"pnpm-lock.yaml": T, "x/pnpm-lock.yaml": T, "tsconfig.json": T, "libs/ui/tsconfig.lib.json": T,
+		"tsconfig": F, "apps/web/Dockerfile": T, "apps/web/.dockerignore": T, "apps/web/Dockerfile.dockerignore": F,
+		"apps/web": T, "apps": T, "apps/web/index.ts": F, "README.md": F, "pnpm-workspace.yaml": T,
+		"a\nb": T, "dir\nname/x.txt": T, "x/y\n": T, "plain/file.txt": F,
+	})
+
 	// file rules.
 	b.compiled("file package.json", inc(IncludeFile("package.json", nil)), map[string]bool{
 		"package.json": T, "Package.json": F, "package.json5": F, "package.jso": F,

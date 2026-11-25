@@ -64,6 +64,11 @@ func (*Resolver) Pathspecs(p string) bool {
 	return js.New().Pathspecs(p)
 }
 
+// InputPatterns implements resolver.Resolver.
+func (*Resolver) InputPatterns() []string {
+	return append([]string{"**/turbo.json", "**/turbo.jsonc"}, js.New().InputPatterns()...)
+}
+
 // Detect implements resolver.Resolver.
 func (*Resolver) Detect(t tree.Tree) bool {
 	for _, n := range configNames {
