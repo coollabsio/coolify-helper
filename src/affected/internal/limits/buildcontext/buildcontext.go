@@ -44,6 +44,11 @@ var Origin = &match.Origin{Rule: limits.BuildContext}
 // else <base directory>/.dockerignore, as BuildKit does. An ignore file that
 // cannot be read or compiled exactly is dropped as a whole, which widens.
 func Compile(ctx context.Context, t tree.Tree, in Input) limits.Result {
+	if reason := unresolvedBaseDir(t, in.BaseDir); reason != "" {
+		// The Docker CLI and the build packs resolve a symlinked base directory, so
+		// the files that matter are somewhere else.
+		return limits.Result{Widened: []graph.Widen{{Scope: Scope, Reason: reason}}, Reads: ancestors(in.BaseDir)}
+	}
 	rs := &match.Ruleset{Limit: limits.BuildContext}
 	if in.BaseDir == "" {
 		rs.Default = match.Include
@@ -70,20 +75,51 @@ func Compile(ctx context.Context, t tree.Tree, in Input) limits.Result {
 		}
 		res.Widened = append(res.Widened, graph.Widen{Scope: Scope, Reason: reason})
 	default:
-		if c, ok := contents[specific]; ok {
+		if _, ok := contents[specific]; ok {
 			used = specific
-			rules = compileIgnore(&res, specific, in.BaseDir, c)
-		} else if c, ok := contents[generic]; ok {
+		} else if _, ok := contents[generic]; ok {
 			used = generic
-			rules = compileIgnore(&res, generic, in.BaseDir, c)
 		}
+		if used == "" {
+			break
+		}
+		if why := dockerignore.Untrusted(t, used, in.DockerfilePath); why != "" {
+			res.Widened = append(res.Widened, graph.Widen{Scope: Scope, Reason: pathx.Display(used) + " is not applied: " + why})
+			break
+		}
+		rules = compileIgnore(&res, used, in.BaseDir, contents[used])
 	}
 	rs.Rules = append(rs.Rules, rules...)
-	rs.Rules = append(rs.Rules, match.IncludeFile(in.DockerfilePath, Origin))
-	if used != "" {
-		rs.Rules = append(rs.Rules, match.IncludeFile(used, Origin))
+	for _, p := range dockerignore.AlwaysIncluded(in.BaseDir, in.DockerfilePath) {
+		rs.Rules = append(rs.Rules, match.IncludeFile(p, Origin))
 	}
 	return res
+}
+
+// unresolvedBaseDir explains why the base directory is not a plain directory
+// of the tree: it, or one of its parents, is a symlink, or nothing is tracked under it.
+func unresolvedBaseDir(t tree.Tree, base string) string {
+	if base == "" {
+		return ""
+	}
+	for _, p := range ancestors(base) {
+		if e, ok := t.Lookup(p); ok && e.IsSymlink() {
+			return pathx.Display(p) + " is a symlink, so the base directory is somewhere else"
+		}
+	}
+	if !tree.HasDir(t, base) {
+		return "nothing is tracked under the base directory " + pathx.Display(base)
+	}
+	return ""
+}
+
+// ancestors returns p and every parent of p, without the root.
+func ancestors(p string) []string {
+	var out []string
+	for ; p != ""; p = pathx.Dir(p) {
+		out = append(out, p)
+	}
+	return out
 }
 
 // IgnoreFiles returns the two candidate ignore files of a build: the

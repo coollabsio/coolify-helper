@@ -98,9 +98,50 @@ func TestDockerfileSpecificIgnoreFileWins(t *testing.T) {
 		".dockerignore":               "apps/web\n",
 	})
 	res := Compile(context.Background(), tr, Input{BaseDir: "", BuildPack: "dockerfile", DockerfilePath: "Dockerfile.web"})
+	// The specific file's rules apply (apps/web is in, the rest out). The generic
+	// .dockerignore stays included: deleting the specific file switches to it.
 	check(t, res.Ruleset,
-		[]string{"apps/web/a", "Dockerfile.web", "Dockerfile.web.dockerignore"},
-		[]string{"apps/api/a", "README.md", ".dockerignore"})
+		[]string{"apps/web/a", "Dockerfile.web", "Dockerfile.web.dockerignore", ".dockerignore"},
+		[]string{"apps/api/a", "README.md"})
+}
+
+func TestIgnoreCandidatesAndLowercaseDockerfileAreAlwaysIncluded(t *testing.T) {
+	// "*" would exclude both: a deleted Dockerfile.dockerignore and BuildKit's
+	// fallback to a lowercase dockerfile both change the build.
+	tr := tree.NewMem(map[string]string{
+		"Dockerfile":    "FROM x",
+		".dockerignore": "*\n!src\n",
+	})
+	res := Compile(context.Background(), tr, Input{BuildPack: "dockerfile", DockerfilePath: "Dockerfile"})
+	check(t, res.Ruleset,
+		[]string{"src/a", "Dockerfile", "Dockerfile.dockerignore", ".dockerignore", "dockerfile", "dockerfile.dockerignore"},
+		[]string{"docs/a"})
+}
+
+func TestSymlinkedIgnoreFileOrDockerfileWidens(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"ignore file": {"Dockerfile": "FROM x", ".dockerignore": "symlink:docker/ignore", "docker/ignore": "docs\n"},
+		"dockerfile":  {"Dockerfile": "symlink:deploy/Dockerfile.prod", "deploy/Dockerfile.prod": "FROM x", ".dockerignore": "deploy\n"},
+	} {
+		res := Compile(context.Background(), tree.NewMem(files), Input{BuildPack: "dockerfile", DockerfilePath: "Dockerfile"})
+		if len(res.Widened) == 0 {
+			t.Errorf("%s: no widening", name)
+		}
+		check(t, res.Ruleset, []string{"docker/ignore", "deploy/Dockerfile.prod", "docs/a"}, nil)
+	}
+}
+
+func TestSymlinkedOrMissingBaseDirWidens(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"base is a link":   {"apps/web": "symlink:web-v2", "apps/web-v2/index.js": "1"},
+		"parent is a link": {"apps": "symlink:src", "src/web/index.js": "1"},
+		"base is missing":  {"other/index.js": "1"},
+	} {
+		res := Compile(context.Background(), tree.NewMem(files), Input{BaseDir: "apps/web", BuildPack: "nixpacks"})
+		if res.Ruleset != nil || len(res.Widened) == 0 {
+			t.Errorf("%s: %+v", name, res)
+		}
+	}
 }
 
 func TestDockerfileSpecificIgnoreFileInSubdirectory(t *testing.T) {

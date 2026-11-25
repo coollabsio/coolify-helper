@@ -478,7 +478,8 @@ func TestOutsideBase(t *testing.T) {
 	}
 	out := compile(t, files, Input{BaseDir: "apps/web", ComposePath: "apps/web/compose.yaml"})
 	check(t, out, []string{"apps/web/a", "apps/shared/x"}, []string{"apps/other/x"})
-	if !reflect.DeepEqual(out.OutsideBase, []string{"apps"}) {
+	// The context, and the probe of its .dockerignore: both are outside the base directory.
+	if !reflect.DeepEqual(out.OutsideBase, []string{"apps", "apps/.dockerignore"}) {
 		t.Errorf("outside base %v", out.OutsideBase)
 	}
 	if len(out.Services) != 1 || out.Services[0].ContextDir != "apps" || out.Services[0].DockerfilePath != "apps/web/Dockerfile" {
@@ -615,5 +616,31 @@ func TestTemporaryDirectoryIsRemoved(t *testing.T) {
 	}
 	if len(entries) != 0 {
 		t.Errorf("left %v in %s", entries, filepath.Clean(dir))
+	}
+}
+
+func TestBuildkitSyntaxArgWidens(t *testing.T) {
+	files := map[string]string{
+		"compose.yaml": "services:\n  a:\n    build:\n      context: .\n      args:\n        BUILDKIT_SYNTAX: example.com/custom/frontend:1\n",
+		"Dockerfile":   "FROM x\nCOPY src /src\n",
+	}
+	out := Compile(context.Background(), tree.NewMem(files), Input{ComposePath: "compose.yaml"})
+	if !out.Failed || out.Ruleset != nil {
+		t.Fatalf("BUILDKIT_SYNTAX did not widen: %+v", out)
+	}
+}
+
+func TestComposeIgnoreFileSymlinkAndLowercaseDockerfile(t *testing.T) {
+	files := map[string]string{
+		"compose.yaml":  "services:\n  a:\n    build: .\n",
+		"Dockerfile":    "FROM x\nCOPY . /app\n",
+		".dockerignore": "symlink:docker/ignore",
+		"docker/ignore": "docs\n",
+	}
+	out := compile(t, files, Input{ComposePath: "compose.yaml"})
+	// The symlinked ignore file is not applied; the lowercase fallback and both ignore candidates are inputs.
+	check(t, out, []string{"docs/a", "docker/ignore", "dockerfile", "Dockerfile.dockerignore"}, nil)
+	if len(out.Widened) == 0 {
+		t.Error("no widening for the symlinked ignore file")
 	}
 }

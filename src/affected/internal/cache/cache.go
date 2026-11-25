@@ -45,6 +45,22 @@ func Fingerprint(t tree.Tree, paths []string) string {
 	return "sha256:" + hex.EncodeToString(h.Sum(nil))
 }
 
+// FingerprintWith is Fingerprint plus the presence (not the content) of other
+// paths: the resolvers decide things from which lockfiles exist without reading
+// them, and a lockfile update should not invalidate the graph.
+func FingerprintWith(t tree.Tree, paths, present []string) string {
+	ps := append([]string(nil), present...)
+	sort.Strings(ps)
+	h := sha256.New()
+	h.Write([]byte(Fingerprint(t, paths)))
+	for _, p := range ps {
+		if _, ok := t.Lookup(p); ok {
+			h.Write([]byte("\x00present\x00" + p))
+		}
+	}
+	return "sha256:" + hex.EncodeToString(h.Sum(nil))
+}
+
 // Cache is the graph cache of one mirror.
 type Cache struct {
 	Dir         string

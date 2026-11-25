@@ -154,6 +154,11 @@ func (an *analyzer) run(content []byte) {
 		if strings.Contains(st.BaseName, "$") && len(an.named) > 0 {
 			an.notApply(line, "FROM uses a variable and the build has named contexts")
 		}
+		// The ONBUILD triggers of a base image run as if they were written here, and
+		// are not known without the image. Images built for that say so in their tag.
+		if strings.Contains(strings.ToLower(st.BaseName), "onbuild") {
+			an.notApply(line, "the base image %s looks like an ONBUILD image, whose triggers can copy anything", st.BaseName)
+		}
 		an.useNamed(st.BaseName)
 		an.useNamed(st.Name)
 		for _, cmd := range st.Commands {

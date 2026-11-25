@@ -25,6 +25,7 @@ import (
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/pathx"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/tree"
 )
 
 // Caps on the ignore file. Past them Compile fails, which widens.
@@ -138,4 +139,55 @@ func compilePattern(contextDir, p string, action match.Action) (r match.Rule, us
 		return r, false, quoted + ": " + err.Error()
 	}
 	return match.Rule{Action: action, Kind: match.Glob, Pattern: glob}, true, ""
+}
+
+// Untrusted returns why the ignore rules of a build can't be applied exactly,
+// or "" when they can. The caller then drops every ignore rule, which widens:
+//   - the ignore file or the Dockerfile is a symlink: BuildKit reads the target,
+//     which the compiled rules don't account for;
+//   - a tracked path contains a newline: patternmatcher's ".*" stops at "\n",
+//     the compiled "**" does not.
+func Untrusted(t tree.Tree, ignoreFile, dockerfilePath string) string {
+	for _, p := range []string{ignoreFile, dockerfilePath} {
+		if e, ok := t.Lookup(p); ok && e.IsSymlink() {
+			return p + " is a symlink"
+		}
+	}
+	for _, e := range t.Entries() {
+		if strings.IndexByte(e.Path, '\n') >= 0 {
+			return "a tracked path contains a newline"
+		}
+	}
+	return ""
+}
+
+// AlwaysIncluded are the files a build reads besides its context, whatever the
+// ignore rules say: both candidate ignore files (adding or deleting the
+// Dockerfile-specific one switches the rules), and for a Dockerfile named
+// "Dockerfile", the "dockerfile" BuildKit falls back to when it is missing.
+func AlwaysIncluded(contextDir, dockerfilePath string) []string {
+	generic := ".dockerignore"
+	if contextDir != "" {
+		generic = contextDir + "/.dockerignore"
+	}
+	out := []string{dockerfilePath, dockerfilePath + ".dockerignore", generic}
+	if dir, base := pathDir(dockerfilePath), pathBase(dockerfilePath); base == "Dockerfile" {
+		lower := "dockerfile"
+		if dir != "" {
+			lower = dir + "/dockerfile"
+		}
+		out = append(out, lower, lower+".dockerignore")
+	}
+	return out
+}
+
+func pathDir(p string) string {
+	if i := strings.LastIndexByte(p, '/'); i >= 0 {
+		return p[:i]
+	}
+	return ""
+}
+
+func pathBase(p string) string {
+	return p[strings.LastIndexByte(p, '/')+1:]
 }

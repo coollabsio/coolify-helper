@@ -16,9 +16,12 @@
 package compose
 
 import (
+	"io"
+
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"sort"
@@ -74,6 +77,11 @@ type Output struct {
 	OutsideBase []string
 	// Failed is set when the limit does not apply at all; Widened says why.
 	Failed bool
+}
+
+func init() {
+	// compose-go warns about unset variables through logrus: keep stderr clean.
+	logrus.SetOutput(io.Discard)
 }
 
 // Compile loads the Compose project and returns the compose limit.
@@ -178,6 +186,11 @@ func (c *compiler) run(ctx context.Context) (Output, error) {
 	}
 	rs.Rules = append(rs.Rules, dedupe(tail)...)
 	out.Ruleset = rs
+	// The files read outside the base directory (a Dockerfile in ../docker and its
+	// ignore files) matter as much as the referenced paths.
+	for p := range c.reads {
+		referenced[p] = true
+	}
 	for _, p := range sortedKeys(referenced) {
 		if !pathx.Within(p, c.in.BaseDir) {
 			out.OutsideBase = append(out.OutsideBase, p)
@@ -332,6 +345,11 @@ func (c *compiler) collectBuild(name string, b *types.BuildConfig, toRepo func(s
 			all.files = append(all.files, p)
 		}
 	}
+	if _, ok := b.Args["BUILDKIT_SYNTAX"]; ok {
+		// BuildKit takes the frontend from this build argument, and a custom
+		// frontend can read anything.
+		return fail("service %s: the build argument BUILDKIT_SYNTAX selects a custom frontend", name)
+	}
 	e := buildEntry{name: name, named: map[string]string{}}
 	for _, k := range sortedKeysOf(b.AdditionalContexts) {
 		v := b.AdditionalContexts[k]
@@ -463,7 +481,9 @@ func (c *compiler) services(ctx context.Context, builds []buildEntry) ([]Service
 func (c *compiler) service(b buildEntry, contents map[string][]byte, readFailed string) *serviceRules {
 	e := &serviceRules{Service: Service{Name: b.name, ContextDir: b.contextDir, DockerfilePath: b.dockerfile}}
 	if b.dockerfile != "" {
-		e.fileRules = append(e.fileRules, match.IncludeFile(b.dockerfile, Origin))
+		for _, p := range dockerignore.AlwaysIncluded(b.contextDir, b.dockerfile) {
+			e.fileRules = append(e.fileRules, match.IncludeFile(p, Origin))
+		}
 	}
 	whole := []match.Rule{dirRule(b.contextDir)}
 
@@ -525,6 +545,10 @@ func (c *compiler) service(b buildEntry, contents map[string][]byte, readFailed 
 	}
 	e.ignoreFile = file
 	e.fileRules = append(e.fileRules, match.IncludeFile(file, Origin))
+	if why := dockerignore.Untrusted(c.t, file, b.dockerfile); why != "" {
+		c.widen("service %s: %s is not applied: %s", b.name, file, why)
+		return e
+	}
 	rules, ok, reason := dockerignore.Compile(b.contextDir, contents[file])
 	if !ok {
 		c.widen("service %s: %s: %s", b.name, file, reason)

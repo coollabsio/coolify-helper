@@ -6,7 +6,9 @@ package triggerset
 import (
 	"context"
 	"fmt"
+	"path"
 	"sort"
+	"strings"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/api"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/cache"
@@ -17,8 +19,10 @@ import (
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/dockerfile"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits/workspace"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/pathx"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/resolver"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/resolver/all"
+	"github.com/coollabsio/coolify-helper/src/affected/internal/resolver/js"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/tree"
 )
 
@@ -83,7 +87,14 @@ func ResolveWorkspace(ctx context.Context, t tree.Tree, apps []*api.Application,
 			}
 		}
 	}
-	ws.Fingerprint = cache.Fingerprint(t, ws.Reads)
+	// Which lockfiles exist decides the package manager, and with it the members.
+	var lockfiles []string
+	for _, e := range t.Entries() {
+		if _, ok := js.Lockfiles[path.Base(e.Path)]; ok {
+			lockfiles = append(lockfiles, e.Path)
+		}
+	}
+	ws.Fingerprint = cache.FingerprintWith(t, ws.Reads, lockfiles)
 	if g, ok := c.Get(ws.Fingerprint); ok {
 		ws.Graph, ws.CacheHit = g, true
 		prefetch = nil
@@ -147,12 +158,12 @@ func computeLimits(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Appli
 	case api.BuildPackDockerfile:
 		in.DockerfilePath = a.DockerfilePath()
 		out := dockerfile.Compile(ctx, t, dockerfile.Input{ContextDir: a.BaseDirectory, DockerfilePath: in.DockerfilePath})
-		l.df = expandSymlinks(ctx, t, out.Result, limits.Dockerfile)
+		l.df = expandSymlinks(ctx, t, withParentLinks(t, out.Result), limits.Dockerfile)
 		anchorIn.DockerfilePath = in.DockerfilePath
 		anchorIn.RunCommands = out.RunCommands
 	case api.BuildPackDockerCompose:
 		out := compose.Compile(ctx, t, compose.Input{BaseDir: a.BaseDirectory, ComposePath: a.ComposePath()})
-		l.co = expandSymlinks(ctx, t, out.Result, limits.Compose)
+		l.co = expandSymlinks(ctx, t, withParentLinks(t, out.Result), limits.Compose)
 		for _, s := range out.Services {
 			anchorIn.Services = append(anchorIn.Services, workspace.ComposeService{Name: s.Name, ContextDir: s.ContextDir, DockerfilePath: s.DockerfilePath, RunCommands: s.RunCommands})
 		}
@@ -164,8 +175,20 @@ func computeLimits(ctx context.Context, t tree.Tree, ws *Workspace, a *api.Appli
 				l.bc.Widened = append(l.bc.Widened, graph.Widen{Scope: "limit:" + limits.BuildContext,
 					Reason: "The Compose file could not be resolved, so files outside the base directory may matter."})
 			} else if l.bc.Ruleset != nil {
+				// Compose reads paths outside the base directory (../shared, symlink
+				// targets): everything the compose limit includes is in the build context.
 				for _, p := range out.OutsideBase {
 					l.bc.Ruleset.Rules = append(l.bc.Ruleset.Rules, match.IncludeDir(p, &match.Origin{Rule: limits.Compose}))
+				}
+				for _, r := range l.co.Ruleset.Rules {
+					p := r.Path
+					if r.Kind == match.Glob {
+						p = literalPrefix(r.Pattern)
+					}
+					if r.Action == match.Include && !pathx.Within(p, a.BaseDirectory) {
+						r.Origin = &match.Origin{Rule: limits.Compose}
+						l.bc.Ruleset.Rules = append(l.bc.Ruleset.Rules, r)
+					}
 				}
 			}
 		}()
@@ -194,6 +217,54 @@ func expandSymlinks(ctx context.Context, t tree.Tree, r limits.Result, limit str
 		}
 	}
 	return out
+}
+
+// withParentLinks makes the symlink expansion follow symlinks in the parent
+// directories of the included paths too: COPY lib/foo, with lib a symlink to
+// vendor/lib, copies vendor/lib/foo. It includes the symlink entries themselves,
+// so that ExpandSymlinks adds their targets.
+func withParentLinks(t tree.Tree, r limits.Result) limits.Result {
+	if r.Ruleset == nil {
+		return r
+	}
+	rs := *r.Ruleset
+	rs.Rules = append([]match.Rule(nil), rs.Rules...)
+	seen := map[string]bool{}
+	for _, rule := range r.Ruleset.Rules {
+		if rule.Action != match.Include {
+			continue
+		}
+		p := rule.Path
+		if rule.Kind == match.Glob {
+			p = literalPrefix(rule.Pattern)
+		}
+		for q := pathx.Dir(p); q != ""; q = pathx.Dir(q) {
+			if e, ok := t.Lookup(q); ok && e.IsSymlink() && !seen[q] {
+				seen[q] = true
+				rs.Rules = append(rs.Rules, match.IncludeFile(q, rule.Origin))
+			}
+		}
+		if rule.Kind == match.Glob && p != "" {
+			if e, ok := t.Lookup(p); ok && e.IsSymlink() && !seen[p] {
+				seen[p] = true
+				rs.Rules = append(rs.Rules, match.IncludeFile(p, rule.Origin))
+			}
+		}
+	}
+	r.Ruleset = &rs
+	return r
+}
+
+// literalPrefix returns the directory prefix of a glob before its first wildcard segment.
+func literalPrefix(pattern string) string {
+	var lit []string
+	for _, seg := range strings.Split(pattern, "/") {
+		if strings.ContainsAny(seg, "*?") {
+			break
+		}
+		lit = append(lit, seg)
+	}
+	return strings.Join(lit, "/")
 }
 
 // FindAnchor returns the packages an application builds.
