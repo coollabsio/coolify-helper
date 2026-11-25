@@ -22,3 +22,7 @@ The home of the Coolify helper container. Coolify uses it during various operati
 | tar            | [GNU tar](https://www.gnu.org/software/tar/)                            |
 | pigz           | [madler/pigz](https://github.com/madler/pigz)                           |
 | tini           | [krallin/tini](https://github.com/krallin/tini)                         |
+
+## coolify-affected
+
+`/usr/local/bin/coolify-affected` decides which applications of a repository a push affects, so that Coolify deploys only those. It is built from [`src/affected`](src/affected), see its [README](src/affected/README.md).
