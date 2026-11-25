@@ -63,8 +63,8 @@ func synthRequest(tb testing.TB, s *testrepo.Synth, after, base string) *api.Eva
 // the numbers. Run it with -v. It only fails on gross regressions (4x the
 // targets), because CI machines vary.
 func TestPerformanceTargets(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short")
+	if testing.Short() || raceEnabled {
+		t.Skip("short, or the race detector")
 	}
 	s := loadSynth(t)
 	mirrors := filepath.Join(t.TempDir(), "mirrors")

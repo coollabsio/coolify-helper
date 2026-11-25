@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/api"
@@ -169,13 +170,16 @@ func DirSize(dir string) int64 {
 func (m *Mirror) fetchWatched(ctx context.Context, maxBytes int64, stdin io.Reader, args ...string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	var tooLarge bool
-	var mu sync.Mutex
+	dir := m.Git.Dir
+	var tooLarge atomic.Bool
 	done := make(chan struct{})
+	var watcher sync.WaitGroup
 	opt := RunOptions{Stdin: stdin}
 	if maxBytes > 0 {
 		opt.Started = func(*os.Process) {
+			watcher.Add(1)
 			go func() {
+				defer watcher.Done()
 				t := time.NewTicker(250 * time.Millisecond)
 				defer t.Stop()
 				for {
@@ -183,10 +187,8 @@ func (m *Mirror) fetchWatched(ctx context.Context, maxBytes int64, stdin io.Read
 					case <-done:
 						return
 					case <-t.C:
-						if DirSize(m.Git.Dir) > maxBytes {
-							mu.Lock()
-							tooLarge = true
-							mu.Unlock()
+						if DirSize(dir) > maxBytes {
+							tooLarge.Store(true)
 							cancel()
 							return
 						}
@@ -197,12 +199,12 @@ func (m *Mirror) fetchWatched(ctx context.Context, maxBytes int64, stdin io.Read
 	}
 	_, err := m.Git.RunWith(ctx, opt, args...)
 	close(done)
-	mu.Lock()
-	defer mu.Unlock()
-	if tooLarge {
+	// The watcher must be gone before the caller renames or removes the mirror.
+	watcher.Wait()
+	if tooLarge.Load() {
 		return ErrMirrorTooLarge
 	}
-	if err == nil && maxBytes > 0 && DirSize(m.Git.Dir) > maxBytes {
+	if err == nil && maxBytes > 0 && DirSize(dir) > maxBytes {
 		return ErrMirrorTooLarge
 	}
 	return err

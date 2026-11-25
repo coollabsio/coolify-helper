@@ -9,6 +9,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/api"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/cache"
@@ -43,6 +44,9 @@ type Workspace struct {
 	// Errors are sanitized messages for the response.
 	Errors []string
 	failed []graph.Widen
+
+	inputsOnce sync.Once
+	inputs     *sharedInputs
 }
 
 // Failed reports whether a detected resolver failed; the workspace limit then does not apply.
@@ -271,30 +275,18 @@ func withParentLinks(t tree.Tree, r limits.Result) limits.Result {
 // base directory itself, and paths with a newline (they drop the .dockerignore
 // rules). When a glob can't be expressed, the set matches everything.
 func inputPatterns(t tree.Tree, ws *Workspace, a *api.Application, l *appLimits, reads []string) match.Set {
-	rs := match.Ruleset{Limit: "inputs", Default: match.Exclude, Rules: []match.Rule{}}
-	var globs []string
-	seen := map[string]bool{}
-	addGlob := func(g string) {
-		if !seen[g] {
-			seen[g] = true
-			globs = append(globs, g)
-		}
+	shared := ws.sharedInputs(t)
+	if shared.invalid {
+		return match.Set{Version: match.SetVersion, AllOf: []match.Ruleset{}, Lockfiles: []string{}}
 	}
-	for _, r := range ws.Resolvers {
-		for _, g := range r.InputPatterns() {
-			addGlob(g)
-		}
-	}
-	addGlob("**/*\n*")
-	addGlob("**/*\n*/**")
-	for _, g := range globs {
-		if match.ValidateGlob(g) != nil {
-			return match.Set{Version: match.SetVersion, AllOf: []match.Ruleset{}, Lockfiles: []string{}}
-		}
-		rs.Rules = append(rs.Rules, match.IncludeGlob(g, nil))
-	}
+	rs := match.Ruleset{Limit: "inputs", Default: match.Exclude, Rules: append([]match.Rule{}, shared.rules...)}
 
-	files := append([]string(nil), reads...)
+	// The shared rules cover the resolver reads and the symlinks; only the
+	// application's own files are left to check against the globs.
+	var files []string
+	for _, f := range reads[len(ws.Reads):] {
+		files = append(files, f)
+	}
 	switch a.BuildPack {
 	case api.BuildPackDockerfile:
 		files = append(files, dockerignore.AlwaysIncluded(a.BaseDirectory, a.DockerfilePath())...)
@@ -305,29 +297,83 @@ func inputPatterns(t tree.Tree, ws *Workspace, a *api.Application, l *appLimits,
 	for p := a.BaseDirectory; p != ""; p = pathx.Dir(p) {
 		files = append(files, p)
 	}
-	for _, e := range t.Entries() {
-		if e.IsSymlink() {
-			files = append(files, e.Path)
-		}
-	}
 	sort.Strings(files)
+	seen := map[string]bool{}
 	for _, f := range files {
-		if f == "" || seen["file:"+f] {
+		if f == "" || seen[f] || shared.files[f] {
 			continue
 		}
-		seen["file:"+f] = true
-		covered := false
-		for _, g := range globs {
-			if match.GlobMatch(g, f) {
-				covered = true
-				break
-			}
-		}
-		if !covered {
+		seen[f] = true
+		if !shared.covered(f) {
 			rs.Rules = append(rs.Rules, match.IncludeFile(f, nil))
 		}
 	}
 	return match.Set{Version: match.SetVersion, AllOf: []match.Ruleset{rs}, Lockfiles: []string{}}
+}
+
+// sharedInputs are the input rules every application of a workspace shares:
+// the globs of every resolver, the files the resolvers read that no glob
+// covers, and the tracked symlinks.
+type sharedInputs struct {
+	invalid bool
+	globs   []string
+	rules   []match.Rule
+	files   map[string]bool
+}
+
+func (s *sharedInputs) covered(f string) bool {
+	for _, g := range s.globs {
+		if match.GlobMatch(g, f) {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *Workspace) sharedInputs(t tree.Tree) *sharedInputs {
+	w.inputsOnce.Do(func() {
+		s := &sharedInputs{files: map[string]bool{}}
+		w.inputs = s
+		seen := map[string]bool{}
+		add := func(g string) {
+			if !seen[g] {
+				seen[g] = true
+				s.globs = append(s.globs, g)
+			}
+		}
+		for _, r := range w.Resolvers {
+			for _, g := range r.InputPatterns() {
+				add(g)
+			}
+		}
+		// Paths with a newline drop the .dockerignore rules.
+		add("**/*\n*")
+		add("**/*\n*/**")
+		for _, g := range s.globs {
+			if match.ValidateGlob(g) != nil {
+				s.invalid = true
+				return
+			}
+			s.rules = append(s.rules, match.IncludeGlob(g, nil))
+		}
+		files := append([]string(nil), w.Reads...)
+		for _, e := range t.Entries() {
+			if e.IsSymlink() {
+				files = append(files, e.Path)
+			}
+		}
+		sort.Strings(files)
+		for _, f := range files {
+			if s.files[f] {
+				continue
+			}
+			s.files[f] = true
+			if !s.covered(f) {
+				s.rules = append(s.rules, match.IncludeFile(f, nil))
+			}
+		}
+	})
+	return w.inputs
 }
 
 // withDockerIncludes re-includes, at the end of the workspace ruleset, the

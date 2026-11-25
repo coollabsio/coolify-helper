@@ -9,7 +9,6 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
@@ -95,11 +94,12 @@ func TestGolden(t *testing.T) {
 				for k := range resp.TimingsMS {
 					resp.TimingsMS[k] = 0
 				}
-				// git's stderr comes from several processes, in any order.
+				// git's stderr comes from several processes, in any order: keep the
+				// tool's own prefix of an error, not git's text.
 				for i, e := range resp.Errors {
-					lines := strings.Split(e, "\n")
-					sort.Strings(lines)
-					resp.Errors[i] = strings.Join(lines, "\n")
+					if j := strings.Index(e, ": git "); j >= 0 {
+						resp.Errors[i] = e[:j] + ": git …"
+					}
 				}
 				b, _ = json.Marshal(resp)
 				outputs = append(outputs, json.RawMessage(repo.Unrender(string(b))))

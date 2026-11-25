@@ -261,12 +261,12 @@
 								{
 									"action": "include",
 									"kind": "file",
-									"path": "apps"
+									"path": "apps/web"
 								},
 								{
 									"action": "include",
 									"kind": "file",
-									"path": "apps/web"
+									"path": "apps"
 								}
 							]
 						}
@@ -519,12 +519,12 @@
 								{
 									"action": "include",
 									"kind": "file",
-									"path": "apps"
+									"path": "apps/web"
 								},
 								{
 									"action": "include",
 									"kind": "file",
-									"path": "apps/web"
+									"path": "apps"
 								},
 								{
 									"action": "include",

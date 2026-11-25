@@ -16,8 +16,8 @@ import (
 // synthetic repository (50k files), with GOMAXPROCS 2 like the 2 vCPU of the
 // brief's budget (10 s). It logs the time; it fails at 4x the budget.
 func TestScanPerformance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short")
+	if testing.Short() || raceEnabled {
+		t.Skip("short, or the race detector")
 	}
 	dir := t.TempDir()
 	s, err := testrepo.BuildSynth(dir, testrepo.DefaultSynth)

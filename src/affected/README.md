@@ -130,7 +130,7 @@ scripts/test-affected.sh --bench   # and the benchmarks
 
 - Golden fixtures (24) are in [`testdata/golden`](testdata/golden): readable files that build real Git repositories (see `internal/testrepo`), with expected responses in [`testdata/expected`](testdata/expected). Regenerate them with `go test -tags coolifytest ./internal/evaluate -run TestGolden -update`, then review the diff.
 - Regenerate the conformance fixture with `go test ./internal/match -run TestConformanceFixture -update` (needs `php`).
-- `TestPerformanceTargets` (`go test -tags coolifytest ./internal/evaluate -run TestPerformanceTargets -v`) and `TestScanPerformance` log the numbers below.
+- `TestPerformanceTargets` (`go test -tags coolifytest ./internal/evaluate -run TestPerformanceTargets -v`) and `TestScanPerformance` log the numbers below. They skip under the race detector.
 
 ### Performance
 
@@ -138,11 +138,11 @@ Synthetic pnpm repository: 50,000 files, 500 members, 100 applications, 2,000 ch
 
 | Target | Measured | Target |
 | --- | --- | --- |
-| Warm mirror, 100 apps, 2,000 changed files, graph cache cleared | 0.5 s without the fetch (0.72 s with it) | 3 s |
-| Warm mirror, no manifest change | 0.51 s, graph from the cache, no blob fetch | 1 s |
+| Warm mirror, 100 apps, 2,000 changed files, graph cache cleared | 0.36 s without the fetch (0.53 s with it) | 3 s |
+| Warm mirror, no manifest change | 0.50 s, graph from the cache, no blob fetch | 1 s |
 | Matching, 100 apps × 50,000 files | 0.24 s on one core | 0.5 s |
 | `scan` of a 50,000-file closure on 2 CPUs | 1.45 s | 10 s |
-| Peak heap of `evaluate` | 89 MB | 512 MB |
+| Peak heap of `evaluate` | 99 MB | 512 MB |
 | First fetch of the repository | 0.87 s from a local remote; bounded by `max_mirror_bytes` and the timeout | |
 
 A first fetch transfers every commit and tree of the history but no blob besides the manifests. For a real repository its cost is roughly the size of `git clone --filter=blob:none --bare`, usually a fraction of a full clone; `max_mirror_bytes` caps it.
