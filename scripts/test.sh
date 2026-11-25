@@ -23,6 +23,7 @@ main() {
 	check_versions
 	check_railpack
 	check_tools
+	check_affected
 	heading "Docker"
 	check_daemon
 	check_compose
@@ -52,6 +53,16 @@ check_tools() {
 	helper mc --version > /dev/null || die "mc --version failed"
 	[ "$(helper ps -o comm | sed -n 2p)" = tini ] || die "PID 1 is not tini"
 	ok "bash, curl, git, git-lfs, ssh, pigz, tar and mc are installed, tini runs as PID 1"
+}
+
+check_affected() {
+	local printed version
+	printed="$(helper coolify-affected version --json)" || die "coolify-affected version --json failed"
+	version="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$IMAGE")"
+	[ "$(jq -r .schema_version <<< "$printed")" = 1 ] || die "coolify-affected prints '$printed', expected schema_version 1"
+	[ -z "$version" ] || [ "$(jq -r .version <<< "$printed")" = "$version" ] || die "coolify-affected prints '$printed', expected version $version"
+	[ "$(helper sh -c 'coolify-affected nope > /dev/null 2>&1; echo $?')" = 2 ] || die "coolify-affected does not exit with 2 on an unknown command"
+	ok "coolify-affected prints the image version and schema_version 1, and exits with 2 on invalid input"
 }
 
 check_daemon() {

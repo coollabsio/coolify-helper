@@ -1,0 +1,5 @@
+# Only the sources of coolify-affected are needed to build it.
+affected/testdata
+affected/**/testdata
+affected/**/*_test.go
+affected/README.md
