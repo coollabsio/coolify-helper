@@ -1,0 +1,351 @@
+{
+	"schema_version": 1,
+	"tool_version": "test",
+	"after": "{{change}}",
+	"timings_ms": {
+		"diff": 0,
+		"fetch": 0,
+		"lock": 0,
+		"resolve": 0,
+		"total": 0
+	},
+	"diffs": {
+		"{{base}}": {
+			"status": "ok",
+			"relation": "ancestor",
+			"changed_files_count": 3,
+			"changed_files_truncated": false,
+			"changed_files": [
+				"packages/docs/content/a.md",
+				"packages/other/x.ts",
+				"packages/ui/src/icons/index.ts"
+			]
+		}
+	},
+	"applications": [
+		{
+			"id": "web",
+			"decision": "deploy",
+			"reason_code": "matched",
+			"reason": "2 of the 3 changed files affect this application.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "packages/docs/content/a.md",
+					"rule": "workspace",
+					"via": [
+						"apps/web (web)",
+						"docs"
+					]
+				},
+				{
+					"file": "packages/ui/src/icons/index.ts",
+					"rule": "workspace",
+					"via": [
+						"apps/web (web)",
+						"ui"
+					]
+				}
+			],
+			"trigger_set": {
+				"compiled": {
+					"version": 1,
+					"all_of": [
+						{
+							"limit": "build_context",
+							"default": "include",
+							"rules": []
+						},
+						{
+							"limit": "workspace",
+							"default": "include",
+							"rules": [
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": "apps/api"
+								},
+								{
+									"action": "include",
+									"kind": "dir",
+									"path": "apps/web"
+								},
+								{
+									"action": "include",
+									"kind": "dir",
+									"path": "packages/docs"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": "packages/other"
+								},
+								{
+									"action": "include",
+									"kind": "dir",
+									"path": "packages/ui"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "README*"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "LICENSE*"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "CHANGELOG*"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "CONTRIBUTING*"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "CODE_OF_CONDUCT*"
+								},
+								{
+									"action": "exclude",
+									"kind": "glob",
+									"pattern": "SECURITY*"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".github"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".gitlab"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".vscode"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".idea"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".husky"
+								},
+								{
+									"action": "exclude",
+									"kind": "dir",
+									"path": ".changeset"
+								},
+								{
+									"action": "exclude",
+									"kind": "file",
+									"path": ".gitlab-ci.yml"
+								},
+								{
+									"action": "exclude",
+									"kind": "file",
+									"path": ".editorconfig"
+								},
+								{
+									"action": "exclude",
+									"kind": "file",
+									"path": "CODEOWNERS"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "pnpm-workspace.yaml"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/api/package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/web/package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "packages/docs/package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "packages/other/package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "packages/ui/package.json"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "packages/ui/src/icons/package.json"
+								}
+							]
+						}
+					],
+					"lockfiles": []
+				},
+				"display": [
+					"workspace: !apps/api/**",
+					"workspace: apps/web/**",
+					"workspace: packages/docs/**",
+					"workspace: !packages/other/**",
+					"workspace: packages/ui/**",
+					"workspace: !README*",
+					"workspace: !LICENSE*",
+					"workspace: !CHANGELOG*",
+					"workspace: !CONTRIBUTING*",
+					"workspace: !CODE_OF_CONDUCT*",
+					"workspace: !SECURITY*",
+					"workspace: !.github/**",
+					"workspace: !.gitlab/**",
+					"workspace: !.vscode/**",
+					"workspace: !.idea/**",
+					"workspace: !.husky/**",
+					"workspace: !.changeset/**",
+					"workspace: !.gitlab-ci.yml",
+					"workspace: !.editorconfig",
+					"workspace: !CODEOWNERS",
+					"workspace: package.json",
+					"workspace: pnpm-workspace.yaml",
+					"workspace: apps/api/package.json",
+					"workspace: apps/web/package.json",
+					"workspace: packages/docs/package.json",
+					"workspace: packages/other/package.json",
+					"workspace: packages/ui/package.json",
+					"workspace: packages/ui/src/icons/package.json"
+				],
+				"limits": [
+					"build_context",
+					"workspace"
+				],
+				"resolvers": [
+					"pnpm"
+				],
+				"anchor": {
+					"resolver": "pnpm",
+					"package": "web",
+					"dir": "apps/web",
+					"source": "commands"
+				},
+				"anchors": [
+					{
+						"resolver": "pnpm",
+						"package": "web",
+						"dir": "apps/web",
+						"source": "commands"
+					}
+				],
+				"widened": [],
+				"manifest_fingerprint": "sha256:dcc34c41e3217a1c8347ccbad1f50e519662ecf1ed16fef7c5d381ed96eaa38b"
+			}
+		},
+		{
+			"id": "api",
+			"decision": "deploy",
+			"reason_code": "resolution_failed",
+			"reason": "Only the build context narrows the set (limit:dockerfile, limit:workspace widened), and 3 of the 3 changed files are in it.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "packages/docs/content/a.md",
+					"rule": "build_context"
+				},
+				{
+					"file": "packages/other/x.ts",
+					"rule": "build_context"
+				},
+				{
+					"file": "packages/ui/src/icons/index.ts",
+					"rule": "build_context"
+				}
+			],
+			"trigger_set": {
+				"compiled": {
+					"version": 1,
+					"all_of": [
+						{
+							"limit": "build_context",
+							"default": "include",
+							"rules": [
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/api/Dockerfile"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/api/Dockerfile.dockerignore"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": ".dockerignore"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/api/dockerfile"
+								},
+								{
+									"action": "include",
+									"kind": "file",
+									"path": "apps/api/dockerfile.dockerignore"
+								}
+							]
+						}
+					],
+					"lockfiles": []
+				},
+				"display": [
+					"build_context: apps/api/Dockerfile",
+					"build_context: apps/api/Dockerfile.dockerignore",
+					"build_context: .dockerignore",
+					"build_context: apps/api/dockerfile",
+					"build_context: apps/api/dockerfile.dockerignore"
+				],
+				"limits": [
+					"build_context"
+				],
+				"resolvers": [
+					"pnpm"
+				],
+				"anchor": null,
+				"anchors": [],
+				"widened": [
+					{
+						"scope": "limit:dockerfile",
+						"reason": "apps/api/Dockerfile:3: COPY reads the whole build context"
+					},
+					{
+						"scope": "limit:workspace",
+						"reason": "Couldn't tell which package this application builds: \"pnpm build\" runs in a directory the tool can't follow."
+					}
+				],
+				"manifest_fingerprint": "sha256:5c28b5b30f7ce28056451d085ac8430b295286579c19b94b0bab6f064a7bac18"
+			}
+		}
+	],
+	"errors": []
+}

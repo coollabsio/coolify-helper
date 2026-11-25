@@ -79,7 +79,7 @@ The compiled set (`trigger_set.compiled`) is what Coolify's PHP fast path matche
 
 ### Resolvers in this version
 
-npm, Yarn (classic and Berry), pnpm and Bun workspaces; Turborepo (`globalDependencies`, `pkg#task` edges, `$TURBO_ROOT$` inputs); Nx (`project.json`, `implicitDependencies`, `namedInputs`/`sharedGlobals`, TypeScript path aliases as edges). Bazel, Pants and Buck are detected and not modeled: the workspace limit then does not apply. The other ecosystems of the brief come in Phases 2 and 3 behind the same `resolver.Resolver` interface, without changes to the core.
+npm, Yarn (classic and Berry), pnpm and Bun workspaces (with `overrides`/`resolutions` that point at members, and member scripts that build other members as edges); Turborepo (`globalDependencies`, `pkg#task` edges, `$TURBO_ROOT$` inputs); Nx (`project.json`, `implicitDependencies`, `namedInputs`/`sharedGlobals`, TypeScript path aliases of the root and of each project, through `extends`, as edges). Bazel, Pants and Buck are detected and not modeled: the workspace limit then does not apply. The other ecosystems of the brief come in Phases 2 and 3 behind the same `resolver.Resolver` interface, without changes to the core.
 
 Lockfile scoping comes in Phase 2. Until then a changed lockfile matches every application whose limits include it, with `lockfile.affects_app: true`.
 
@@ -90,7 +90,8 @@ Lockfile scoping comes in Phase 2. Until then a changed lockfile matches every a
 ## Security
 
 - Repository content is never executed: no package managers, hooks (`core.hooksPath=/dev/null`), filters, textconv, submodule updates or LFS fetches, and fork content is never read.
-- git runs with an empty environment besides `PATH`, no system or global config, no prompts, `GIT_ALLOW_PROTOCOL=https:http:ssh`, and `protocol.allow=never` with `https`, `http` and `ssh` allowed. The request's `git_config` is applied before these settings, so it can't override them, and keys such as `protocol.*`, `core.hooksPath` and `include.*` are rejected.
+- git runs with an empty environment besides `PATH` and the request's `git_env`, no system or global config, no prompts, `GIT_ALLOW_PROTOCOL=https:http:ssh`, and `protocol.allow=never` with `https`, `http` and `ssh` allowed. The tool's settings are applied after the request's, so they always win.
+- The request's `git_config` may only set `url.<base>.insteadOf`/`pushInsteadOf` and `http.*` keys (except those that name files); anything else, such as `hook.*` or `credential.helper`, could make git run a program. `git_env` may not set the askpass, editor, pager, config or directory variables. Repository URLs may not carry a password, or any user info for http(s): the URL is stored in the mirror's config on the shared volume.
 - `file://` is only allowed in test builds (`-tags coolifytest`), through a constant that production builds can't change.
 - Credentials (the request's `git_config` values and user info, sensitive `git_env` values, URL user info, `Authorization` headers and token-shaped strings) are scrubbed from every error, including git's stderr.
 - Every path from a request or from repository content is cleaned and kept inside the repository; `mirror_key` must be 64 hex characters. Every read has a size cap; YAML alias expansion, `include`/`extends` depth and symlink chains are capped; Compose files are loaded from a private copy that compose-go can't leave.
@@ -107,6 +108,11 @@ Lockfile scoping comes in Phase 2. Until then a changed lockfile matches every a
 - **`anchors`:** an application can build several packages, so `trigger_set.anchors` lists all of them; `anchor` is the first.
 - **Blank `watch_paths`** deploy on every change, as Coolify's webhooks do.
 - **Workspace roots** are detected at the repository root only. A workspace in a subdirectory of a repository is not modeled: the base directory still narrows.
+- **Commands are read strictly.** The anchor from commands, and the commands and Dockerfile `RUN` lines next to a Dockerfile, Compose or base-directory anchor, are only trusted when every simple command is understood: a package manager or task runner with a filter, an install, or an inert command (`echo`, `mkdir`, `apk add`…). A command whose effect is unknown, such as `node scripts/build.mjs`, `cp`, `python`, `eval` or a root script, means no anchor, and the workspace limit does not apply. This costs the workspace limit for start commands like `node dist/server.js`; the other limits still narrow. The scripts of every member's `package.json` that name other members are edges.
+- **Members nested in a member** of the closure, and the dependencies of members with install scripts, are never excluded.
+- **ONBUILD triggers of a base image** can't be known without the image. A base image whose name contains `onbuild` makes the dockerfile limit widen; another base image with ONBUILD triggers is a known gap.
+- **`BUILDKIT_SYNTAX`** as a Compose build argument selects a custom frontend, which can read anything: the compose limit widens. A Dockerfile app's build arguments come from Coolify and are not known to the tool.
+- **Ignore files and Dockerfiles that are symlinks**, and repositories with a newline in a path, make the `.dockerignore` rules widen. Both ignore candidates, and the lowercase `dockerfile` BuildKit falls back to, are always in the set. A base directory that is a symlink, or under one, makes the build context widen.
 
 ## Development
 
@@ -118,7 +124,7 @@ scripts/test-affected.sh --fuzz    # and every fuzz target, FUZZTIME=10s each by
 scripts/test-affected.sh --bench   # and the benchmarks
 ```
 
-- Golden fixtures are in [`testdata/golden`](testdata/golden): readable files that build real Git repositories (see `internal/testrepo`), with expected responses in [`testdata/expected`](testdata/expected). Regenerate them with `go test -tags coolifytest ./internal/evaluate -run TestGolden -update`, then review the diff.
+- Golden fixtures (24) are in [`testdata/golden`](testdata/golden): readable files that build real Git repositories (see `internal/testrepo`), with expected responses in [`testdata/expected`](testdata/expected). Regenerate them with `go test -tags coolifytest ./internal/evaluate -run TestGolden -update`, then review the diff.
 - Regenerate the conformance fixture with `go test ./internal/match -run TestConformanceFixture -update` (needs `php`).
 - `TestPerformanceTargets` (`go test -tags coolifytest ./internal/evaluate -run TestPerformanceTargets -v`) and `TestScanPerformance` log the numbers below.
 

@@ -1,0 +1,45 @@
+# Workspace rules that keep wrong skips out:
+# - web's own build script builds docs (pnpm -F docs build): docs is in web's closure through a script edge.
+# - packages/ui/src/icons has a package.json, so "packages/**" makes it a member, but it is part of ui's files.
+# - The api Dockerfile builds with a RUN of unknown effect (a root script): it has no anchor, so the
+#   workspace limit does not apply and a change in packages/other still deploys it.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "scripts": {"build": "turbo run build"}}
+-- pnpm-workspace.yaml --
+packages: ["apps/*", "packages/**"]
+-- apps/web/package.json --
+{"name": "web", "scripts": {"build": "pnpm -F docs build && next build"}, "dependencies": {"ui": "workspace:*"}}
+-- apps/api/package.json --
+{"name": "api"}
+-- apps/api/Dockerfile --
+FROM node:22
+WORKDIR /app
+COPY . .
+RUN pnpm install && pnpm build
+-- packages/docs/package.json --
+{"name": "docs"}
+-- packages/docs/content/a.md --
+1
+-- packages/ui/package.json --
+{"name": "ui"}
+-- packages/ui/src/icons/package.json --
+{"type": "module"}
+-- packages/ui/src/icons/index.ts --
+1
+-- packages/other/package.json --
+{"name": "other"}
+-- packages/other/x.ts --
+1
+-- @commit change --
+-- packages/docs/content/a.md --
+2
+-- packages/ui/src/icons/index.ts --
+2
+-- packages/other/x.ts --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "pnpm --filter web build"}},
+  {"id": "api", "base_commit": "{{base}}", "build_pack": "dockerfile", "dockerfile_location": "/apps/api/Dockerfile"}
+]}

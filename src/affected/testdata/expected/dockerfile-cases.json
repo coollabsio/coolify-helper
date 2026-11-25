@@ -50,6 +50,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/a/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/dockerfile.dockerignore"
 									}
 								]
 							},
@@ -90,6 +110,10 @@
 					"display": [
 						"build_context: services/a/**",
 						"build_context: services/a/Dockerfile",
+						"build_context: services/a/Dockerfile.dockerignore",
+						"build_context: services/a/.dockerignore",
+						"build_context: services/a/dockerfile",
+						"build_context: services/a/dockerfile.dockerignore",
 						"dockerfile: services/a/package.json/**",
 						"dockerfile: services/a/src/**",
 						"dockerfile: services/a/Dockerfile",
@@ -136,6 +160,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/b/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/b/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/b/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/b/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/b/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -144,7 +188,11 @@
 					},
 					"display": [
 						"build_context: services/b/**",
-						"build_context: services/b/Dockerfile"
+						"build_context: services/b/Dockerfile",
+						"build_context: services/b/Dockerfile.dockerignore",
+						"build_context: services/b/.dockerignore",
+						"build_context: services/b/dockerfile",
+						"build_context: services/b/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -190,6 +238,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/c/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/c/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/c/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/c/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/c/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -198,7 +266,11 @@
 					},
 					"display": [
 						"build_context: services/c/**",
-						"build_context: services/c/Dockerfile"
+						"build_context: services/c/Dockerfile",
+						"build_context: services/c/Dockerfile.dockerignore",
+						"build_context: services/c/.dockerignore",
+						"build_context: services/c/dockerfile",
+						"build_context: services/c/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -244,6 +316,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/d/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/d/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/d/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/d/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/d/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -252,7 +344,11 @@
 					},
 					"display": [
 						"build_context: services/d/**",
-						"build_context: services/d/Dockerfile"
+						"build_context: services/d/Dockerfile",
+						"build_context: services/d/Dockerfile.dockerignore",
+						"build_context: services/d/.dockerignore",
+						"build_context: services/d/dockerfile",
+						"build_context: services/d/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -293,6 +389,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/e/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/dockerfile.dockerignore"
 									}
 								]
 							},
@@ -333,6 +449,10 @@
 					"display": [
 						"build_context: services/e/**",
 						"build_context: services/e/Dockerfile",
+						"build_context: services/e/Dockerfile.dockerignore",
+						"build_context: services/e/.dockerignore",
+						"build_context: services/e/dockerfile",
+						"build_context: services/e/dockerfile.dockerignore",
 						"dockerfile: services/e/go.mod/**",
 						"dockerfile: services/e/cmd/**",
 						"dockerfile: services/e/Dockerfile",
@@ -406,6 +526,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/a/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/a/dockerfile.dockerignore"
 									}
 								]
 							},
@@ -446,6 +586,10 @@
 					"display": [
 						"build_context: services/a/**",
 						"build_context: services/a/Dockerfile",
+						"build_context: services/a/Dockerfile.dockerignore",
+						"build_context: services/a/.dockerignore",
+						"build_context: services/a/dockerfile",
+						"build_context: services/a/dockerfile.dockerignore",
 						"dockerfile: services/a/package.json/**",
 						"dockerfile: services/a/src/**",
 						"dockerfile: services/a/Dockerfile",
@@ -492,6 +636,26 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/e/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/e/dockerfile.dockerignore"
 									}
 								]
 							},
@@ -532,6 +696,10 @@
 					"display": [
 						"build_context: services/e/**",
 						"build_context: services/e/Dockerfile",
+						"build_context: services/e/Dockerfile.dockerignore",
+						"build_context: services/e/.dockerignore",
+						"build_context: services/e/dockerfile",
+						"build_context: services/e/dockerfile.dockerignore",
 						"dockerfile: services/e/go.mod/**",
 						"dockerfile: services/e/cmd/**",
 						"dockerfile: services/e/Dockerfile",

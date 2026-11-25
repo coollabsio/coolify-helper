@@ -61,7 +61,22 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "services/x/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "services/x/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -73,7 +88,10 @@
 						"build_context: !services/x/docs/**",
 						"build_context: services/x/docs/keep.md/**",
 						"build_context: services/x/Dockerfile",
-						"build_context: services/x/.dockerignore"
+						"build_context: services/x/Dockerfile.dockerignore",
+						"build_context: services/x/.dockerignore",
+						"build_context: services/x/dockerfile",
+						"build_context: services/x/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -124,6 +142,21 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/y/build/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -134,7 +167,10 @@
 						"build_context: services/y/**",
 						"build_context: !services/y/tests/**",
 						"build_context: services/y/build/Dockerfile",
-						"build_context: services/y/build/Dockerfile.dockerignore"
+						"build_context: services/y/build/Dockerfile.dockerignore",
+						"build_context: services/y/.dockerignore",
+						"build_context: services/y/build/dockerfile",
+						"build_context: services/y/build/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -221,7 +257,22 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "services/x/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "services/x/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/x/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -233,7 +284,10 @@
 						"build_context: !services/x/docs/**",
 						"build_context: services/x/docs/keep.md/**",
 						"build_context: services/x/Dockerfile",
-						"build_context: services/x/.dockerignore"
+						"build_context: services/x/Dockerfile.dockerignore",
+						"build_context: services/x/.dockerignore",
+						"build_context: services/x/dockerfile",
+						"build_context: services/x/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"
@@ -289,6 +343,21 @@
 										"action": "include",
 										"kind": "file",
 										"path": "services/y/build/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "services/y/build/dockerfile.dockerignore"
 									}
 								]
 							}
@@ -299,7 +368,10 @@
 						"build_context: services/y/**",
 						"build_context: !services/y/tests/**",
 						"build_context: services/y/build/Dockerfile",
-						"build_context: services/y/build/Dockerfile.dockerignore"
+						"build_context: services/y/build/Dockerfile.dockerignore",
+						"build_context: services/y/.dockerignore",
+						"build_context: services/y/build/dockerfile",
+						"build_context: services/y/build/dockerfile.dockerignore"
 					],
 					"limits": [
 						"build_context"

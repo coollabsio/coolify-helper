@@ -1,0 +1,17 @@
+# The base directory is a symlink: the build packs resolve it, so the files that matter are in its target.
+-- @commit base --
+-- apps/web-v2/index.js --
+1
+-- apps/web-v2/Dockerfile --
+FROM node:22
+COPY index.js /app/
+-- @symlink apps/web --
+web-v2
+-- @commit change --
+-- apps/web-v2/index.js --
+2
+-- @request --
+{"after": "{{change}}", "applications": [
+  {"id": "nixpacks", "base_commit": "{{base}}", "base_directory": "/apps/web"},
+  {"id": "dockerfile", "base_commit": "{{base}}", "build_pack": "dockerfile", "base_directory": "/apps/web", "dockerfile_location": "/Dockerfile"}
+]}

@@ -1,0 +1,94 @@
+{
+	"schema_version": 1,
+	"tool_version": "test",
+	"after": "{{change}}",
+	"timings_ms": {
+		"diff": 0,
+		"fetch": 0,
+		"lock": 0,
+		"resolve": 0,
+		"total": 0
+	},
+	"diffs": {
+		"{{base}}": {
+			"status": "ok",
+			"relation": "ancestor",
+			"changed_files_count": 1,
+			"changed_files_truncated": false,
+			"changed_files": [
+				"apps/web-v2/index.js"
+			]
+		}
+	},
+	"applications": [
+		{
+			"id": "nixpacks",
+			"decision": "deploy",
+			"reason_code": "resolution_failed",
+			"reason": "No limit narrows the set (limit:build_context widened), so every change affects this application.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "apps/web-v2/index.js",
+					"rule": "build_context"
+				}
+			],
+			"trigger_set": {
+				"compiled": {
+					"version": 1,
+					"all_of": [],
+					"lockfiles": []
+				},
+				"display": [],
+				"limits": [],
+				"resolvers": [],
+				"anchor": null,
+				"anchors": [],
+				"widened": [
+					{
+						"scope": "limit:build_context",
+						"reason": "apps/web is a symlink, so the base directory is somewhere else"
+					}
+				],
+				"manifest_fingerprint": "sha256:671b30671662a3cfd592d5f9df7bc8169f4eca24ee6eb27fdb20285867cd796b"
+			}
+		},
+		{
+			"id": "dockerfile",
+			"decision": "deploy",
+			"reason_code": "resolution_failed",
+			"reason": "No limit narrows the set (limit:build_context, limit:dockerfile widened), so every change affects this application.",
+			"base": "{{base}}",
+			"matches": [
+				{
+					"file": "apps/web-v2/index.js",
+					"rule": "build_context"
+				}
+			],
+			"trigger_set": {
+				"compiled": {
+					"version": 1,
+					"all_of": [],
+					"lockfiles": []
+				},
+				"display": [],
+				"limits": [],
+				"resolvers": [],
+				"anchor": null,
+				"anchors": [],
+				"widened": [
+					{
+						"scope": "limit:build_context",
+						"reason": "apps/web is a symlink, so the base directory is somewhere else"
+					},
+					{
+						"scope": "limit:dockerfile",
+						"reason": "apps/web/Dockerfile: the Dockerfile does not exist"
+					}
+				],
+				"manifest_fingerprint": "sha256:8af855a2f030942f55deb296dcfe29fdb436ac2271d51c6f90168c97fe0ce674"
+			}
+		}
+	],
+	"errors": []
+}

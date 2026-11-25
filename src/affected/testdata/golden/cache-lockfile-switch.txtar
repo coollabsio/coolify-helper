@@ -1,0 +1,38 @@
+# The graph cache must not survive a change of which lockfiles exist: they pick the package manager,
+# and with it the members when pnpm-workspace.yaml and package.json "workspaces" disagree.
+# Request 1 (yarn.lock: members from "workspaces", packages/ui is a member outside web's closure) caches the graph.
+# The second commit switches to pnpm (pnpm-workspace.yaml only lists apps/*): packages/ui is no member,
+# so its files are outside every package and global. Request 2 must deploy, like a cold mirror would.
+-- @commit base --
+-- package.json --
+{"name": "root", "private": true, "workspaces": ["apps/*", "packages/*"]}
+-- pnpm-workspace.yaml --
+packages: ["apps/*"]
+-- yarn.lock --
+# yarn lockfile v1
+-- apps/web/package.json --
+{"name": "web"}
+-- apps/web/index.js --
+1
+-- packages/ui/package.json --
+{"name": "ui"}
+-- packages/ui/x.js --
+1
+-- @commit web --
+-- apps/web/index.js --
+2
+-- @commit pnpm --
+-- @delete yarn.lock --
+-- pnpm-lock.yaml --
+lockfileVersion: '9.0'
+-- @commit ui --
+-- packages/ui/x.js --
+2
+-- @request --
+{"after": "{{web}}", "applications": [
+  {"id": "web", "base_commit": "{{base}}", "commands": {"build": "yarn workspace web build"}}
+]}
+-- @request --
+{"after": "{{ui}}", "applications": [
+  {"id": "web", "base_commit": "{{pnpm}}", "commands": {"build": "pnpm --filter web build"}}
+]}

@@ -48,6 +48,11 @@
 										"action": "include",
 										"kind": "dir",
 										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
 									}
 								]
 							},
@@ -83,12 +88,57 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/app/Dockerfile"
 									},
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile.dockerignore"
 									},
 									{
 										"action": "include",
@@ -108,21 +158,6 @@
 									{
 										"action": "include",
 										"kind": "file",
-										"path": "stack/app/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.api.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
 										"path": "stack/common.yaml"
 									},
 									{
@@ -134,16 +169,6 @@
 										"action": "include",
 										"kind": "file",
 										"path": "stack/docker-compose.yaml"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/Dockerfile.dockerignore"
 									}
 								]
 							}
@@ -157,19 +182,23 @@
 						"compose: stack/worker/worker.js/**",
 						"compose: shared/**",
 						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/.dockerignore",
 						"compose: stack/app/Dockerfile",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/app/dockerfile",
+						"compose: stack/app/dockerfile.dockerignore",
 						"compose: stack/worker/Dockerfile",
+						"compose: stack/worker/Dockerfile.dockerignore",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/dockerfile",
+						"compose: stack/worker/dockerfile.dockerignore",
 						"compose: stack/db/init.sql/**",
 						"compose: stack/.env.web",
 						"compose: stack/.env",
-						"compose: stack/app/.dockerignore",
-						"compose: stack/app/Dockerfile.api.dockerignore",
-						"compose: stack/app/Dockerfile.dockerignore",
 						"compose: stack/common.yaml",
 						"compose: stack/compose.worker.yaml",
-						"compose: stack/docker-compose.yaml",
-						"compose: stack/worker/.dockerignore",
-						"compose: stack/worker/Dockerfile.dockerignore"
+						"compose: stack/docker-compose.yaml"
 					],
 					"limits": [
 						"build_context",
@@ -237,6 +266,11 @@
 										"action": "include",
 										"kind": "dir",
 										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
 									}
 								]
 							},
@@ -272,12 +306,57 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/app/Dockerfile"
 									},
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile.dockerignore"
 									},
 									{
 										"action": "include",
@@ -297,21 +376,6 @@
 									{
 										"action": "include",
 										"kind": "file",
-										"path": "stack/app/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.api.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
 										"path": "stack/common.yaml"
 									},
 									{
@@ -323,16 +387,6 @@
 										"action": "include",
 										"kind": "file",
 										"path": "stack/docker-compose.yaml"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/Dockerfile.dockerignore"
 									}
 								]
 							}
@@ -346,19 +400,23 @@
 						"compose: stack/worker/worker.js/**",
 						"compose: shared/**",
 						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/.dockerignore",
 						"compose: stack/app/Dockerfile",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/app/dockerfile",
+						"compose: stack/app/dockerfile.dockerignore",
 						"compose: stack/worker/Dockerfile",
+						"compose: stack/worker/Dockerfile.dockerignore",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/dockerfile",
+						"compose: stack/worker/dockerfile.dockerignore",
 						"compose: stack/db/init.sql/**",
 						"compose: stack/.env.web",
 						"compose: stack/.env",
-						"compose: stack/app/.dockerignore",
-						"compose: stack/app/Dockerfile.api.dockerignore",
-						"compose: stack/app/Dockerfile.dockerignore",
 						"compose: stack/common.yaml",
 						"compose: stack/compose.worker.yaml",
-						"compose: stack/docker-compose.yaml",
-						"compose: stack/worker/.dockerignore",
-						"compose: stack/worker/Dockerfile.dockerignore"
+						"compose: stack/docker-compose.yaml"
 					],
 					"limits": [
 						"build_context",
@@ -426,6 +484,11 @@
 										"action": "include",
 										"kind": "dir",
 										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
 									}
 								]
 							},
@@ -461,12 +524,57 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/app/Dockerfile"
 									},
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile.dockerignore"
 									},
 									{
 										"action": "include",
@@ -486,21 +594,6 @@
 									{
 										"action": "include",
 										"kind": "file",
-										"path": "stack/app/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.api.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
 										"path": "stack/common.yaml"
 									},
 									{
@@ -512,16 +605,6 @@
 										"action": "include",
 										"kind": "file",
 										"path": "stack/docker-compose.yaml"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/Dockerfile.dockerignore"
 									}
 								]
 							}
@@ -535,19 +618,23 @@
 						"compose: stack/worker/worker.js/**",
 						"compose: shared/**",
 						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/.dockerignore",
 						"compose: stack/app/Dockerfile",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/app/dockerfile",
+						"compose: stack/app/dockerfile.dockerignore",
 						"compose: stack/worker/Dockerfile",
+						"compose: stack/worker/Dockerfile.dockerignore",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/dockerfile",
+						"compose: stack/worker/dockerfile.dockerignore",
 						"compose: stack/db/init.sql/**",
 						"compose: stack/.env.web",
 						"compose: stack/.env",
-						"compose: stack/app/.dockerignore",
-						"compose: stack/app/Dockerfile.api.dockerignore",
-						"compose: stack/app/Dockerfile.dockerignore",
 						"compose: stack/common.yaml",
 						"compose: stack/compose.worker.yaml",
-						"compose: stack/docker-compose.yaml",
-						"compose: stack/worker/.dockerignore",
-						"compose: stack/worker/Dockerfile.dockerignore"
+						"compose: stack/docker-compose.yaml"
 					],
 					"limits": [
 						"build_context",
@@ -615,6 +702,11 @@
 										"action": "include",
 										"kind": "dir",
 										"path": "shared"
+									},
+									{
+										"action": "include",
+										"kind": "dir",
+										"path": "shared"
 									}
 								]
 							},
@@ -650,12 +742,57 @@
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.api.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/app/Dockerfile"
 									},
 									{
 										"action": "include",
 										"kind": "file",
+										"path": "stack/app/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/app/dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
 										"path": "stack/worker/Dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/Dockerfile.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/.dockerignore"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile"
+									},
+									{
+										"action": "include",
+										"kind": "file",
+										"path": "stack/worker/dockerfile.dockerignore"
 									},
 									{
 										"action": "include",
@@ -675,21 +812,6 @@
 									{
 										"action": "include",
 										"kind": "file",
-										"path": "stack/app/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.api.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/app/Dockerfile.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
 										"path": "stack/common.yaml"
 									},
 									{
@@ -701,16 +823,6 @@
 										"action": "include",
 										"kind": "file",
 										"path": "stack/docker-compose.yaml"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/.dockerignore"
-									},
-									{
-										"action": "include",
-										"kind": "file",
-										"path": "stack/worker/Dockerfile.dockerignore"
 									}
 								]
 							}
@@ -724,19 +836,23 @@
 						"compose: stack/worker/worker.js/**",
 						"compose: shared/**",
 						"compose: stack/app/Dockerfile.api",
+						"compose: stack/app/Dockerfile.api.dockerignore",
+						"compose: stack/app/.dockerignore",
 						"compose: stack/app/Dockerfile",
+						"compose: stack/app/Dockerfile.dockerignore",
+						"compose: stack/app/dockerfile",
+						"compose: stack/app/dockerfile.dockerignore",
 						"compose: stack/worker/Dockerfile",
+						"compose: stack/worker/Dockerfile.dockerignore",
+						"compose: stack/worker/.dockerignore",
+						"compose: stack/worker/dockerfile",
+						"compose: stack/worker/dockerfile.dockerignore",
 						"compose: stack/db/init.sql/**",
 						"compose: stack/.env.web",
 						"compose: stack/.env",
-						"compose: stack/app/.dockerignore",
-						"compose: stack/app/Dockerfile.api.dockerignore",
-						"compose: stack/app/Dockerfile.dockerignore",
 						"compose: stack/common.yaml",
 						"compose: stack/compose.worker.yaml",
-						"compose: stack/docker-compose.yaml",
-						"compose: stack/worker/.dockerignore",
-						"compose: stack/worker/Dockerfile.dockerignore"
+						"compose: stack/docker-compose.yaml"
 					],
 					"limits": [
 						"build_context",
