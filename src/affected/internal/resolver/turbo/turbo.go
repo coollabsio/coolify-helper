@@ -210,6 +210,8 @@ func (*Resolver) Resolve(ctx context.Context, t tree.Tree) (*graph.Graph, error)
 	for _, from := range sortedKeys(edges) {
 		g.AddPackage(graph.Package{Dir: from, Resolvers: []string{"turbo"}, DepDirs: edges[from]})
 	}
+	// Member scripts that run turbo ("turbo run build --filter=docs").
+	js.AddScriptEdges(w, w.MemberGraph(), g, (*Resolver)(nil).AnchorFromCommand, []string{"turbo"})
 	return g, nil
 }
 

@@ -37,6 +37,12 @@ type Command struct {
 	// ($VAR, ~, -, an absolute path, an escape above the start) or ran
 	// conditionally.
 	DirKnown bool
+	// PipedFrom is the Argv[0] of the command that pipes into this one
+	// ("curl" in "curl … | sh"), "" when its stdin is not a pipe.
+	PipedFrom string
+	// Heredoc is set when the command's stdin is a here-document. The body was
+	// split into commands of its own ("bash <<EOF … EOF").
+	Heredoc bool
 }
 
 // Split splits a script into simple commands. Dir is relative to the directory
@@ -65,6 +71,14 @@ type state struct {
 
 type builder struct {
 	out []Command
+	// last is the Argv[0] of the last command emitted.
+	last string
+}
+
+// stdin is where a simple command's standard input comes from.
+type stdin struct {
+	pipedFrom string
+	heredoc   bool
 }
 
 // run turns tokens into commands, tracking cd. It returns the state at the end.
@@ -78,8 +92,14 @@ func (b *builder) run(toks []token, st state, depth int) state {
 	// and-or list succeeded: its directory holds while "&&" continues the list.
 	pending := false
 	skipTarget := false
+	heredoc := false
 
 	finish := func(nextOp string) {
+		in := stdin{heredoc: heredoc}
+		if prevOp == "|" {
+			in.pipedFrom = b.last
+		}
+		heredoc = false
 		var w []string
 		for _, t := range words {
 			w = append(w, t.text)
@@ -90,7 +110,7 @@ func (b *builder) run(toks []token, st state, depth int) state {
 		}
 		subs = nil
 		if len(w) > 0 {
-			st, pending = b.simple(w, st, prevOp, nextOp, &cond, pending, depth)
+			st, pending = b.simple(w, st, prevOp, nextOp, &cond, pending, depth, in)
 		}
 		if pending && nextOp != "&&" {
 			st.known, st.dir, pending = false, "", false
@@ -112,6 +132,9 @@ func (b *builder) run(toks []token, st state, depth int) state {
 			// delimiter, already consumed by the lexer).
 			subs = append(subs, t.subs...)
 			skipTarget = t.text != "<<"
+			if t.text == "<<" {
+				heredoc = true
+			}
 		case tOp:
 			skipTarget = false
 			switch t.text {
@@ -147,7 +170,7 @@ var condKeywords = map[string]bool{"if": true, "elif": true, "while": true, "unt
 
 // simple handles one simple command: it strips keywords, assignments and
 // wrappers, follows cd, expands "sh -c", and emits the command.
-func (b *builder) simple(w []string, st state, prevOp, nextOp string, cond *int, pending bool, depth int) (state, bool) {
+func (b *builder) simple(w []string, st state, prevOp, nextOp string, cond *int, pending bool, depth int, in stdin) (state, bool) {
 	for len(w) > 0 {
 		switch {
 		case leadKeywords[w[0]]:
@@ -197,14 +220,14 @@ func (b *builder) simple(w []string, st state, prevOp, nextOp string, cond *int,
 	// "sh -c 'script'" runs the script: its commands replace the shell command.
 	if script, ok := shellScript(argv); ok {
 		if depth+1 > maxDepth {
-			b.emit([]string{Opaque}, cmdState)
+			b.emit([]string{Opaque}, cmdState, stdin{})
 			return st, pending
 		}
 		b.run(lexScript(script, depth+1), cmdState, depth+1)
 		return st, pending
 	}
 
-	b.emit(argv, cmdState)
+	b.emit(argv, cmdState, in)
 
 	switch argv[0] {
 	case "cd", "pushd":
@@ -230,8 +253,9 @@ func (b *builder) simple(w []string, st state, prevOp, nextOp string, cond *int,
 	return st, pending
 }
 
-func (b *builder) emit(argv []string, st state) {
-	c := Command{Argv: argv, DirKnown: st.known}
+func (b *builder) emit(argv []string, st state, in stdin) {
+	b.last = argv[0]
+	c := Command{Argv: argv, DirKnown: st.known, PipedFrom: in.pipedFrom, Heredoc: in.heredoc}
 	if st.known {
 		c.Dir = st.dir
 	}

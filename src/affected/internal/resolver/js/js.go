@@ -13,7 +13,14 @@
 // that a local path ("file:", "link:", "portal:", "workspace:./x", "../x")
 // points into. A local path outside every member is followed one manifest
 // further, so that its own dependencies on members are not lost. Overrides and
-// resolutions to local paths are edges from every member.
+// resolutions to local paths, or to a member by name with "workspace:", are
+// edges from every member. A member's package.json scripts that build other
+// members ("pnpm -F docs build", "cd ../docs && npm run build", "yarn
+// workspace docs build") are edges from it; the turbo and nx resolvers add
+// the edges of scripts that run turbo and nx.
+//
+// Options after the script name go to the script: "pnpm build --filter web"
+// and "bun run build --filter web" run the root build script, unfiltered.
 //
 // Globals: the root package.json, the lockfiles, the package manager and
 // toolchain configuration files at the root, .yarn/, root tsconfig*.json and
@@ -31,8 +38,10 @@ package js
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/command"
@@ -92,27 +101,15 @@ func (*Resolver) Resolve(ctx context.Context, t tree.Tree) (*graph.Graph, error)
 	if err != nil {
 		return nil, err
 	}
-	g := graph.New()
-	g.Resolvers = append(g.Resolvers, w.Managers...)
+	g := w.MemberGraph()
 	for _, m := range w.Members {
-		p := graph.Package{
-			Dir:       m.Dir,
-			Resolvers: w.Managers,
-			Manifests: []string{m.Manifest},
-			Deps:      m.deps,
-			DepDirs:   append(append([]string(nil), m.depDirs...), w.allDepDirs...),
-			Lifecycle: m.lifecycle,
-		}
-		if m.Name != "" {
-			p.Names = []string{m.Name}
-		}
 		for _, f := range memberConfigs {
 			if _, ok := t.Lookup(m.Dir + "/" + f); ok {
-				p.Manifests = append(p.Manifests, m.Dir+"/"+f)
+				g.AddPackage(graph.Package{Dir: m.Dir, Resolvers: w.Managers, Manifests: []string{m.Dir + "/" + f}})
 			}
 		}
-		g.AddPackage(p)
 	}
+	AddScriptEdges(w, g, g, (*Resolver)(nil).AnchorFromCommand, w.Managers)
 	source := strings.Join(w.Managers, "/")
 	for _, gl := range w.globals {
 		switch {
@@ -128,6 +125,86 @@ func (*Resolver) Resolve(ctx context.Context, t tree.Tree) (*graph.Graph, error)
 		g.AddLockfile(lf, Lockfiles[lf])
 	}
 	return g, nil
+}
+
+// MemberGraph returns the graph of the members: names, manifests, edges and
+// lifecycle flags, without globals.
+func (w *Workspace) MemberGraph() *graph.Graph {
+	g := graph.New()
+	g.Resolvers = append(g.Resolvers, w.Managers...)
+	for _, m := range w.Members {
+		p := graph.Package{
+			Dir:       m.Dir,
+			Resolvers: w.Managers,
+			Manifests: []string{m.Manifest},
+			Deps:      m.deps,
+			DepDirs:   append(append([]string(nil), m.depDirs...), w.allDepDirs...),
+			Lifecycle: m.lifecycle,
+		}
+		if m.Name != "" {
+			p.Names = []string{m.Name}
+		}
+		g.AddPackage(p)
+	}
+	return g
+}
+
+// Scripts returns the scripts of a member's package.json, sorted by name. A
+// "scripts" field that is not an object of strings yields what it can.
+func (m *Member) Scripts() []string {
+	v, ok := m.Raw["scripts"]
+	if !ok || string(v) == "null" {
+		return nil
+	}
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(v, &raw) != nil {
+		return nil
+	}
+	names := make([]string, 0, len(raw))
+	for k := range raw {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	var out []string
+	for _, k := range names {
+		var s string
+		if json.Unmarshal(raw[k], &s) == nil && strings.TrimSpace(s) != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// AddScriptEdges reads the package.json scripts of every member: each simple
+// command of a script ("pnpm -F docs build && next build") runs through
+// anchor (one resolver's AnchorFromCommand) against the graph lookup, in the
+// member's directory, and every member it anchors becomes an edge from the
+// member, added to out with the resolvers names. So a member whose build
+// builds another member has it in its closure, through the graph cache.
+// Unknown and NotMine commands are ignored: they are the member's own tools
+// ("next build"), which read its own files.
+func AddScriptEdges(w *Workspace, lookup, out *graph.Graph, anchor func(command.Command, *graph.Graph) resolver.Anchor, resolvers []string) {
+	edges := map[string][]string{}
+	for _, m := range w.Members {
+		for _, script := range m.Scripts() {
+			for _, c := range command.SplitFrom(script, m.Dir, true) {
+				a := anchor(c, lookup)
+				if a.Kind != resolver.Anchored {
+					continue
+				}
+				for _, d := range a.Dirs {
+					if d != m.Dir {
+						edges[m.Dir] = append(edges[m.Dir], d)
+					}
+				}
+			}
+		}
+	}
+	for _, m := range w.Members {
+		if len(edges[m.Dir]) > 0 {
+			out.AddPackage(graph.Package{Dir: m.Dir, Resolvers: resolvers, DepDirs: uniq(edges[m.Dir])})
+		}
+	}
 }
 
 // installCommands are install-like subcommands: they build nothing in particular.
@@ -269,6 +346,33 @@ var pnpmValued = map[string]bool{
 	"--package-import-method": true, "--network-concurrency": true, "--child-concurrency": true, "--cpu": true, "--os": true, "--libc": true,
 }
 
+// pnpmScriptNamed reports whether the positional arguments read so far end
+// with the name of what pnpm runs: pnpm passes the arguments after it, options
+// included, to the script ("run <script>", "test", "start", "exec <cmd>", an
+// implicit "<script>"). Install and other built-in commands read their options
+// anywhere.
+func pnpmScriptNamed(positional []string) bool {
+	for len(positional) > 0 {
+		switch positional[0] {
+		case "recursive", "m", "multi":
+			positional = positional[1:]
+			continue
+		}
+		break
+	}
+	if len(positional) == 0 {
+		return false
+	}
+	sub := positional[0]
+	switch {
+	case sub == "run" || sub == "run-script":
+		return len(positional) >= 2
+	case installCommands[sub] || neutralCommands[sub]:
+		return false
+	}
+	return true
+}
+
 func pnpmAnchor(cmd command.Command, g *graph.Graph) resolver.Anchor {
 	c := cwd{dir: cmd.Dir, known: cmd.DirKnown}
 	var filters []string
@@ -307,6 +411,11 @@ func pnpmAnchor(cmd command.Command, g *graph.Graph) resolver.Anchor {
 		case strings.HasPrefix(a, "-"):
 		default:
 			positional = append(positional, a)
+		}
+		if pnpmScriptNamed(positional) {
+			// Everything after the script name goes to the script ("pnpm build
+			// --filter web" runs the root build script with "--filter web").
+			break
 		}
 	}
 	sub := ""
@@ -530,6 +639,23 @@ var bunValued = map[string]bool{
 	"--jsx-factory": true, "--jsx-fragment": true, "--jsx-import-source": true, "--port": true, "--elide-lines": true,
 }
 
+// bunScriptNamed reports whether the positional arguments read so far end
+// with the script (or file, or built-in command) that bun runs. Install-like
+// commands read their options anywhere.
+func bunScriptNamed(positional []string) bool {
+	if len(positional) == 0 {
+		return false
+	}
+	sub := positional[0]
+	switch {
+	case sub == "run":
+		return len(positional) >= 2
+	case installCommands[sub] || neutralCommands[sub]:
+		return false
+	}
+	return true
+}
+
 func bunAnchor(cmd command.Command, g *graph.Graph) resolver.Anchor {
 	c := cwd{dir: cmd.Dir, known: cmd.DirKnown}
 	var filters []string
@@ -564,6 +690,12 @@ func bunAnchor(cmd command.Command, g *graph.Graph) resolver.Anchor {
 		case strings.HasPrefix(a, "-"):
 		default:
 			positional = append(positional, a)
+		}
+		if bunScriptNamed(positional) {
+			// Everything after the script name goes to the script: "bun run
+			// build --filter x" runs build with "--filter x"; the filter of
+			// "bun run --filter x build" comes before it.
+			break
 		}
 	}
 	sub := ""

@@ -74,6 +74,18 @@ func TestAnchorFromCommand(t *testing.T) {
 		{"pnpm deploy /out", "", resolver.Unknown, nil, "root script"},
 		{"pnpm --filter @acme/web exec vite build", "", resolver.Anchored, []string{"apps/web"}, ""},
 		{"pnpm run build -- --filter=@acme/web", "", resolver.Unknown, nil, "root script"},
+		// Options after the script name go to the script, not to pnpm.
+		{"pnpm build --filter api", "", resolver.Unknown, nil, "root script"},
+		{"pnpm build --filter api", "apps/web", resolver.Anchored, []string{"apps/web"}, ""},
+		{"pnpm run build --filter=api", "", resolver.Unknown, nil, "root script"},
+		{"pnpm run build -F api", "apps/web", resolver.Anchored, []string{"apps/web"}, ""},
+		{"pnpm test --filter api", "", resolver.Unknown, nil, "root script"},
+		{"pnpm start -F api", "apps/web", resolver.Anchored, []string{"apps/web"}, ""},
+		{"pnpm build -C apps/api", "", resolver.Unknown, nil, "root script"},
+		{"pnpm build -r", "", resolver.Unknown, nil, "root script"},
+		{"pnpm --filter api run build --filter @acme/web", "", resolver.Anchored, []string{"apps/api"}, ""},
+		{"pnpm -r --filter api build -F @acme/web", "", resolver.Anchored, []string{"apps/api"}, ""},
+		{"pnpm install --filter api", "", resolver.Neutral, nil, ""},
 		{"pnpm --version", "", resolver.Neutral, nil, ""},
 		{"pnpm", "", resolver.Neutral, nil, ""},
 		// npm
@@ -116,6 +128,13 @@ func TestAnchorFromCommand(t *testing.T) {
 		{"bun run build", "", resolver.Unknown, nil, "root script"},
 		{"bun build ./src/index.ts --outdir dist", "apps/api", resolver.Anchored, []string{"apps/api"}, ""},
 		{"bun --cwd apps/web run build", "", resolver.Anchored, []string{"apps/web"}, ""},
+		// Options after the script name go to the script, not to bun.
+		{"bun run build --filter api", "", resolver.Unknown, nil, "root script"},
+		{"bun run build --filter api", "apps/web", resolver.Anchored, []string{"apps/web"}, ""},
+		{"bun build --filter api", "apps/web", resolver.Anchored, []string{"apps/web"}, ""},
+		{"bun run build --cwd apps/api", "", resolver.Unknown, nil, "root script"},
+		{"bun run --filter api build --filter @acme/web", "", resolver.Anchored, []string{"apps/api"}, ""},
+		{"bun install --filter api", "", resolver.Neutral, nil, ""},
 		// not ours
 		{"turbo run build --filter=web", "", resolver.NotMine, nil, ""},
 		{"node server.js", "", resolver.NotMine, nil, ""},

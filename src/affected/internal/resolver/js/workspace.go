@@ -685,18 +685,32 @@ func aliasName(s string) string {
 	return s
 }
 
-// rootEdges reads overrides and resolutions that point at local paths: every
-// member may then use the target.
+// override is one entry of overrides or resolutions: the selector (a package
+// name, "foo@1", "parent>foo", "**/foo"…) and the specifier it forces.
+type override struct{ key, spec string }
+
+// rootEdges reads overrides and resolutions (package.json "overrides",
+// "resolutions", "pnpm.overrides", pnpm-workspace.yaml "overrides") that point
+// at a member: every member may then use the target. A local path
+// ("link:./packages/x", "file:", "workspace:./x") points at the member that
+// contains it; "workspace:*" (also "workspace:^", "workspace:~", a range)
+// points at the member named by the selector. Other specifiers ("1.2.3",
+// "catalog:", "npm:…") point at the registry.
 func (w *Workspace) rootEdges(pw *pnpmWorkspace) error {
-	var specs []string
-	var walk func(v any)
-	walk = func(v any) {
+	var entries []override
+	var walk func(key string, v any)
+	walk = func(key string, v any) {
 		switch x := v.(type) {
 		case string:
-			specs = append(specs, x)
+			entries = append(entries, override{key: key, spec: x})
 		case map[string]any:
-			for _, y := range x {
-				walk(y)
+			// npm nested overrides: {"foo": {".": "1.0.0", "bar": "…"}}.
+			for k, y := range x {
+				if k == "." {
+					walk(key, y)
+				} else {
+					walk(k, y)
+				}
 			}
 		}
 	}
@@ -704,7 +718,7 @@ func (w *Workspace) rootEdges(pw *pnpmWorkspace) error {
 		if v, ok := w.rootRaw[key]; ok {
 			var x any
 			if err := json.Unmarshal(v, &x); err == nil {
-				walk(x)
+				walk("", x)
 			}
 		}
 	}
@@ -715,15 +729,21 @@ func (w *Workspace) rootEdges(pw *pnpmWorkspace) error {
 		if err := json.Unmarshal(v, &p); err != nil {
 			return fmt.Errorf("package.json: \"pnpm\" is not an object of the expected shape")
 		}
-		for _, s := range p.Overrides {
-			specs = append(specs, s)
+		for k, s := range p.Overrides {
+			entries = append(entries, override{key: k, spec: s})
 		}
 	}
-	for _, s := range pw.Overrides {
-		specs = append(specs, s)
+	for k, s := range pw.Overrides {
+		entries = append(entries, override{key: k, spec: s})
 	}
-	for _, s := range specs {
-		_, targets := specTargets(s)
+	byName := map[string][]*Member{}
+	for _, m := range w.Members {
+		if m.Name != "" {
+			byName[m.Name] = append(byName[m.Name], m)
+		}
+	}
+	for _, e := range entries {
+		name, targets := specTargets(e.spec)
 		for _, tg := range targets {
 			p, ok := pathx.Join("", tg.path)
 			if !ok {
@@ -733,8 +753,48 @@ func (w *Workspace) rootEdges(pw *pnpmWorkspace) error {
 				w.allDepDirs = append(w.allDepDirs, m.Dir)
 			}
 		}
+		names := []string{}
+		if name != "" {
+			names = append(names, name)
+		}
+		if strings.HasPrefix(strings.TrimSpace(e.spec), "workspace:") {
+			names = append(names, selectorNames(e.key)...)
+		}
+		for _, n := range names {
+			for _, m := range byName[n] {
+				w.allDepDirs = append(w.allDepDirs, m.Dir)
+			}
+		}
 	}
 	return nil
+}
+
+// selectorNames returns the package names an override selector may name:
+// "foo", "foo@^1", "parent>foo", "parent@1>@scope/foo", yarn "**/foo",
+// "parent/foo", "@scope/parent/@scope/foo". It returns every candidate (the
+// whole selector and each part after a ">" or "/"), without versions: the
+// caller keeps the ones that are member names, which can only widen.
+func selectorNames(key string) []string {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return nil
+	}
+	var out []string
+	add := func(s string) {
+		if n := aliasName(s); n != "" {
+			out = append(out, n)
+		}
+	}
+	parts := strings.Split(key, ">")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		add(part)
+		segs := strings.Split(part, "/")
+		for i := range segs {
+			add(strings.Join(segs[i:], "/"))
+		}
+	}
+	return out
 }
 
 func (w *Workspace) addGlobal(g globalPath) {

@@ -90,18 +90,32 @@ func (a Anchor) Found() bool { return len(a.Dirs) > 0 }
 //  3. A base directory inside a member: that member.
 //  4. Commands: the application's commands (in the base directory) and, for the
 //     Dockerfile and Compose build packs, the RUN commands, each simple command
-//     through every resolver. The union of the anchored members; any command a
-//     resolver can't tell (Unknown) means no anchor at all, and so does a
-//     command that runs a task runner or a shell script ("make", "./build.sh"),
-//     which can build anything. Install-like and foreign commands are ignored.
+//     through every resolver. The union of the anchored members.
+//
+// Every rule reads the commands too: the application's commands and the RUN
+// commands (of the service, for a Compose service). The members they anchor
+// are added to a location anchor (1-3), and any command whose effect is
+// unknown means no anchor at all, whatever the rule:
+//
+//   - a command a resolver can't tell (Unknown: "pnpm build" in an unknown
+//     directory, "--filter=$APP"),
+//   - a task runner or a shell script ("make", "./build.sh", "bash build.sh",
+//     "sh < x", "cat x | sh"), which can build anything,
+//   - a command that no resolver recognizes ("node scripts/x.mjs", "tsx x.ts",
+//     "python3 build.py", "cp -r packages/docs/content apps/web", "eval",
+//     "xargs", "concurrently …"): it can read any file. Only inert commands are
+//     ignored (echo, mkdir, rm, chmod, export, cd…), and so are installs from
+//     the network that don't read the repository (apk, apt-get, corepack, curl
+//     and wget, a shell that runs what curl or wget pipe into it, and the
+//     package managers' global installs, which the js resolver calls Neutral),
+//     and "docker compose" (the Compose limit models what it builds).
+//
+// The price: a start command such as "node dist/server.js" rules out the
+// anchor, and so does a Dockerfile "RUN pnpm build" (its WORKDIR is not a
+// repository path, so it may be a root script that builds anything). Both widen.
 //
 // The root member never anchors by location: a root Dockerfile or base
 // directory says nothing about which package is built.
-//
-// A location anchor (1, 2) is widened with the members that the RUN commands
-// name ("turbo prune api" in a Dockerfile that lives in apps/web), and a RUN
-// command that selects packages through a variable ("--filter=$APP") rules the
-// location anchor out: the Dockerfile may be shared by several applications.
 //
 // When the graph has a build system that is not modeled (Bazel…), or no
 // members, there is no anchor.
@@ -117,33 +131,30 @@ func FindAnchor(in AnchorInput) Anchor {
 		return Anchor{Reason: "The repository has no workspace packages."}
 	}
 
+	app := split(in.Commands, in.BaseDir, true)
+	var run []command.Command
 	switch in.BuildPack {
 	case "dockerfile":
+		run = split(in.RunCommands, "", false)
 		if in.DockerfilePath != "" {
 			if m := innermostMember(g, pathx.Dir(in.DockerfilePath)); m != nil {
-				run := split(in.RunCommands, "", false)
-				return located(g, in.Resolvers, []string{m.Dir}, SourceDockerfile, run)
+				return located(g, in.Resolvers, m, SourceDockerfile, concat(app, run))
 			}
 		}
 	case "dockercompose":
-		if a, ok := composeAnchor(in); ok {
+		if a, ok := composeAnchor(in, app); ok {
 			return a
 		}
-	}
-
-	if m := innermostMember(g, in.BaseDir); m != nil {
-		return finish(g, Anchor{Dirs: []string{m.Dir}, Source: SourceBaseDir, Resolver: owner(m)})
-	}
-
-	cmds := split(in.Commands, in.BaseDir, true)
-	switch in.BuildPack {
-	case "dockerfile":
-		cmds = append(cmds, split(in.RunCommands, "", false)...)
-	case "dockercompose":
 		for _, s := range in.Services {
-			cmds = append(cmds, split(s.RunCommands, "", false)...)
+			run = append(run, split(s.RunCommands, "", false)...)
 		}
 	}
+	cmds := concat(app, run)
+
+	if m := innermostMember(g, in.BaseDir); m != nil {
+		return located(g, in.Resolvers, m, SourceBaseDir, cmds)
+	}
+
 	dirs, tool, reason := fromCommands(g, in.Resolvers, cmds)
 	if reason != "" {
 		return Anchor{Reason: NoAnchor + ": " + reason}
@@ -154,8 +165,12 @@ func FindAnchor(in AnchorInput) Anchor {
 	return finish(g, Anchor{Dirs: dirs, Source: SourceCommands, Resolver: tool})
 }
 
-// composeAnchor is rule 2.
-func composeAnchor(in AnchorInput) (Anchor, bool) {
+func concat(a, b []command.Command) []command.Command {
+	return append(append([]command.Command(nil), a...), b...)
+}
+
+// composeAnchor is rule 2. app are the application's commands.
+func composeAnchor(in AnchorInput, app []command.Command) (Anchor, bool) {
 	g := in.Graph
 	if len(in.Services) == 0 {
 		return Anchor{}, false
@@ -163,7 +178,7 @@ func composeAnchor(in AnchorInput) (Anchor, bool) {
 	var dirs []string
 	res := ""
 	for _, s := range in.Services {
-		run := split(s.RunCommands, "", false)
+		cmds := concat(app, split(s.RunCommands, "", false))
 		m := (*graph.Package)(nil)
 		if s.DockerfilePath != "" {
 			m = innermostMember(g, pathx.Dir(s.DockerfilePath))
@@ -172,7 +187,7 @@ func composeAnchor(in AnchorInput) (Anchor, bool) {
 			m = innermostMember(g, s.ContextDir)
 		}
 		if m != nil {
-			a := located(g, in.Resolvers, []string{m.Dir}, SourceCompose, run)
+			a := located(g, in.Resolvers, m, SourceCompose, cmds)
 			if !a.Found() {
 				return Anchor{}, false
 			}
@@ -182,7 +197,7 @@ func composeAnchor(in AnchorInput) (Anchor, bool) {
 			}
 			continue
 		}
-		d, tool, reason := fromCommands(g, in.Resolvers, run)
+		d, tool, reason := fromCommands(g, in.Resolvers, cmds)
 		if reason != "" || len(d) == 0 {
 			return Anchor{}, false
 		}
@@ -194,23 +209,14 @@ func composeAnchor(in AnchorInput) (Anchor, bool) {
 	return finish(g, Anchor{Dirs: dirs, Source: SourceCompose, Resolver: res}), true
 }
 
-// located returns a location anchor widened by the members its RUN commands name.
-func located(g *graph.Graph, rs []resolver.Resolver, dirs []string, source string, run []command.Command) Anchor {
-	res := owner(g.PackageAt(dirs[0]))
-	for _, c := range run {
-		for _, r := range rs {
-			a := r.AnchorFromCommand(c, g)
-			switch a.Kind {
-			case resolver.Anchored:
-				dirs = append(dirs, a.Dirs...)
-			case resolver.Unknown:
-				if hasVariable(c.Argv) {
-					return Anchor{Reason: fmt.Sprintf("%s: the Dockerfile selects packages through a variable (%s), so it may be shared by several applications.", NoAnchor, a.Reason)}
-				}
-			}
-		}
+// located returns a location anchor (the member m) widened by the members the
+// commands anchor, or no anchor when a command's effect is unknown.
+func located(g *graph.Graph, rs []resolver.Resolver, m *graph.Package, source string, cmds []command.Command) Anchor {
+	dirs, _, reason := fromCommands(g, rs, cmds)
+	if reason != "" {
+		return Anchor{Reason: NoAnchor + ": " + reason}
 	}
-	return finish(g, Anchor{Dirs: dirs, Source: source, Resolver: res})
+	return finish(g, Anchor{Dirs: append([]string{m.Dir}, dirs...), Source: source, Resolver: owner(m)})
 }
 
 func hasVariable(argv []string) bool {
@@ -266,18 +272,28 @@ func shellRunsFile(args []string) bool {
 	return false
 }
 
-// fromCommands is rule 4: the union of anchored members, or a reason.
+// fromCommands reads commands: the union of the anchored members, the tool
+// that anchored the first, or the reason why the commands rule out an anchor.
 func fromCommands(g *graph.Graph, rs []resolver.Resolver, cmds []command.Command) ([]string, string, string) {
 	var dirs []string
 	tool := ""
 	for _, c := range cmds {
+		if len(c.Argv) == 0 {
+			continue
+		}
 		if why := opaque(c); why != "" {
 			return nil, "", why + "."
 		}
+		mine := false
 		for _, r := range rs {
 			a := r.AnchorFromCommand(c, g)
 			switch a.Kind {
+			case resolver.NotMine:
+				continue
 			case resolver.Unknown:
+				if hasVariable(c.Argv) {
+					return nil, "", fmt.Sprintf("a command selects packages through a variable (%s), so the build may be shared by several applications.", a.Reason)
+				}
 				return nil, "", a.Reason + "."
 			case resolver.Anchored:
 				if len(a.Dirs) == 0 {
@@ -291,9 +307,85 @@ func fromCommands(g *graph.Graph, rs []resolver.Resolver, cmds []command.Command
 					}
 				}
 			}
+			mine = true
+		}
+		if !mine {
+			if why := unrecognized(c); why != "" {
+				return nil, "", why + "."
+			}
 		}
 	}
 	return uniq(dirs), tool, ""
+}
+
+// inert are commands that read no file of the repository that could change
+// what is built: shell builtins and file system chores, user management, and
+// installs from the network.
+var inert = map[string]bool{
+	"echo": true, "printf": true, "true": true, "false": true, ":": true, "test": true, "[": true, "[[": true,
+	"mkdir": true, "rm": true, "rmdir": true, "touch": true, "chmod": true, "chown": true, "chgrp": true,
+	"export": true, "set": true, "unset": true, "cd": true, "pushd": true, "popd": true, "pwd": true,
+	"sleep": true, "exit": true, "return": true, "wait": true, "trap": true, "umask": true, "shopt": true,
+	"ls": true, "which": true, "type": true, "hash": true, "alias": true, "unalias": true, "ulimit": true,
+	"readonly": true, "declare": true, "typeset": true, "local": true, "shift": true, "break": true, "continue": true,
+	"whoami": true, "id": true, "uname": true, "date": true, "nproc": true,
+	"useradd": true, "adduser": true, "addgroup": true, "groupadd": true, "usermod": true,
+	"apk": true, "apt-get": true, "apt": true, "yum": true, "dnf": true, "microdnf": true, "corepack": true,
+	"curl": true, "wget": true,
+}
+
+// fetchers download installers that a shell may run from a pipe.
+var fetchers = map[string]bool{"curl": true, "wget": true}
+
+// unrecognized reports why a command that no resolver recognizes rules out an
+// anchor, or "" when it is inert.
+func unrecognized(c command.Command) string {
+	a0 := path.Base(c.Argv[0])
+	switch {
+	case inert[a0]:
+		return ""
+	case shellNames[a0]:
+		// No script file (opaque checked that): the script comes from stdin.
+		if c.Heredoc || fetchers[path.Base(c.PipedFrom)] {
+			// A here-document was split into commands of its own; an installer
+			// that curl or wget pipe in doesn't read the repository.
+			return ""
+		}
+		return fmt.Sprintf("%q reads a script from its standard input, which can build anything", display(c.Argv))
+	case (a0 == "docker" || a0 == "podman") && dockerSubcommand(c.Argv[1:]) == "compose",
+		a0 == "docker-compose" || a0 == "podman-compose":
+		// The Compose file's services are what the anchor models.
+		return ""
+	}
+	return fmt.Sprintf("%q runs %s, which can read any file", display(c.Argv), a0)
+}
+
+// dockerValued are docker's global options that take a separate value.
+var dockerValued = map[string]bool{
+	"-H": true, "--host": true, "-c": true, "--context": true, "--config": true, "-l": true, "--log-level": true,
+	"--tlscacert": true, "--tlscert": true, "--tlskey": true,
+}
+
+// dockerSubcommand returns the subcommand of docker's (or podman's) arguments.
+func dockerSubcommand(args []string) string {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if !strings.HasPrefix(a, "-") {
+			return a
+		}
+		if dockerValued[a] {
+			i++
+		}
+	}
+	return ""
+}
+
+func display(argv []string) string {
+	s := strings.Join(argv, " ")
+	if len(s) > 120 {
+		s = s[:117] + "..."
+	}
+	return s
 }
 
 func split(scripts []string, dir string, known bool) []command.Command {

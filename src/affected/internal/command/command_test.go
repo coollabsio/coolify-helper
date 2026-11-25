@@ -201,3 +201,24 @@ func FuzzSplit(f *testing.F) {
 		}
 	})
 }
+
+func TestStdin(t *testing.T) {
+	cmds := Split("curl -fsSL https://x.sh/install | bash -s -- -y && cat <<EOF | sh\necho hi\nEOF\nbash <<'X'\npnpm build\nX\nsh < build.sh")
+	type io struct {
+		argv0, piped string
+		heredoc      bool
+	}
+	var got []io
+	for _, c := range cmds {
+		got = append(got, io{c.Argv[0], c.PipedFrom, c.Heredoc})
+	}
+	want := []io{
+		{"curl", "", false}, {"bash", "curl", false},
+		{"echo", "", false}, {"cat", "", true}, {"sh", "cat", false},
+		{"pnpm", "", false}, {"bash", "", true},
+		{"sh", "", false},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got  %v\nwant %v", got, want)
+	}
+}

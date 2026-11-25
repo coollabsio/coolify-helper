@@ -37,13 +37,15 @@ var metaFiles = []string{".gitlab-ci.yml", ".editorconfig", "CODEOWNERS"}
 //
 //	(a) one rule per member directory, shallow first: include when the member is
 //	    in the anchor's closure (origin "workspace" with the "via" chain), else
-//	    exclude. The root member never gets a rule.
+//	    exclude. The root member never gets a rule, and neither does a member
+//	    nested in the directory of a closure member: it is part of that member.
 //	(b) the root-level meta excludes (README*, LICENSE*, …, .github/, …,
 //	    CODEOWNERS); never "*.md" in general.
 //	(b') the rules of (a) again for the members that a meta exclude hits (a
 //	    member under .github/), so that they keep their decision.
 //	(c) re-includes: every global (origin "global", lockfiles "lockfile"), every
-//	    member manifest, every Lifecycle member directory (global), every
+//	    member manifest, the directory of every Lifecycle member and of its
+//	    workspace dependencies, transitively (global), every
 //	    reference path (origin "reference", dir) and every managed config path
 //	    (origin "managed_config", file).
 //
@@ -85,11 +87,27 @@ func Compile(g *graph.Graph, a Anchor, referencePaths, managedConfigPaths []stri
 		}
 		return members[i].Dir < members[j].Dir
 	})
-	memberRule := func(p *graph.Package) match.Rule {
-		if via, ok := closure[p.Dir]; ok {
-			return match.IncludeDir(p.Dir, &match.Origin{Rule: RuleWorkspace, Via: via})
+	// insideClosure reports whether a directory is inside the directory of a
+	// closure member (not the root): its files are that member's files.
+	insideClosure := func(dir string) bool {
+		for q := pathx.Dir(dir); q != ""; q = pathx.Dir(q) {
+			if _, ok := closure[q]; ok {
+				return true
+			}
 		}
-		return match.ExcludeDir(p.Dir, &match.Origin{Rule: RuleWorkspace})
+		return false
+	}
+	memberRule := func(p *graph.Package) (match.Rule, bool) {
+		if via, ok := closure[p.Dir]; ok {
+			return match.IncludeDir(p.Dir, &match.Origin{Rule: RuleWorkspace, Via: via}), true
+		}
+		if insideClosure(p.Dir) {
+			// A member nested in a closure member ("packages/ui/src/icons" with
+			// its own package.json) is part of that member's files: the tools
+			// that build the outer member read it.
+			return match.Rule{}, false
+		}
+		return match.ExcludeDir(p.Dir, &match.Origin{Rule: RuleWorkspace}), true
 	}
 
 	rs := &match.Ruleset{
@@ -99,7 +117,9 @@ func Compile(g *graph.Graph, a Anchor, referencePaths, managedConfigPaths []stri
 	}
 	// (a)
 	for _, p := range members {
-		rs.Rules = append(rs.Rules, memberRule(p))
+		if r, ok := memberRule(p); ok {
+			rs.Rules = append(rs.Rules, r)
+		}
 	}
 	// (b)
 	meta := &match.Origin{Rule: RuleWorkspace}
@@ -115,7 +135,9 @@ func Compile(g *graph.Graph, a Anchor, referencePaths, managedConfigPaths []stri
 	// (b')
 	for _, p := range members {
 		if hitByMeta(p.Dir) {
-			rs.Rules = append(rs.Rules, memberRule(p))
+			if r, ok := memberRule(p); ok {
+				rs.Rules = append(rs.Rules, r)
+			}
 		}
 	}
 	// (c)
@@ -154,7 +176,13 @@ func Compile(g *graph.Graph, a Anchor, referencePaths, managedConfigPaths []stri
 			add(match.IncludeFile(mf, &match.Origin{Rule: RuleGlobal}))
 		}
 		if p.Lifecycle {
-			add(match.IncludeDir(p.Dir, &match.Origin{Rule: RuleGlobal}))
+			// The lifecycle scripts run on every install, and they may use the
+			// member's workspace dependencies: the whole closure of the member is global.
+			for _, d := range graph.SortedKeys(g.Closure([]string{p.Dir})) {
+				if d != "" {
+					add(match.IncludeDir(d, &match.Origin{Rule: RuleGlobal}))
+				}
+			}
 		}
 	}
 	for _, rp := range referencePaths {

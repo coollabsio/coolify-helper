@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/graph"
 	"github.com/coollabsio/coolify-helper/src/affected/internal/limits"
@@ -126,49 +125,7 @@ func ruleMatches(r match.Rule, p string) bool {
 	case match.File:
 		return p == r.Path
 	case match.Glob:
-		return globMatch(strings.Split(r.Pattern, "/"), strings.Split(p, "/"))
+		return match.GlobMatch(r.Pattern, p)
 	}
 	return false
 }
-
-func globMatch(ps, ss []string) bool {
-	for len(ps) > 0 {
-		if ps[0] == "**" {
-			for k := 0; k <= len(ss); k++ {
-				if globMatch(ps[1:], ss[k:]) {
-					return true
-				}
-			}
-			return false
-		}
-		if len(ss) == 0 || !segMatch(ps[0], ss[0]) {
-			return false
-		}
-		ps, ss = ps[1:], ss[1:]
-	}
-	return len(ss) == 0
-}
-
-func segMatch(p, s string) bool {
-	if p == "" {
-		return s == ""
-	}
-	switch p[0] {
-	case '*':
-		for k := 0; k <= len(s); k++ {
-			if segMatch(p[1:], s[k:]) {
-				return true
-			}
-		}
-		return false
-	case '?':
-		if s == "" {
-			return false
-		}
-		_, n := firstRune(s)
-		return segMatch(p[1:], s[n:])
-	}
-	return s != "" && p[0] == s[0] && segMatch(p[1:], s[1:])
-}
-
-func firstRune(s string) (rune, int) { return utf8.DecodeRuneInString(s) }

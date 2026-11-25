@@ -361,3 +361,60 @@ func TestGlobalKinds(t *testing.T) {
 		}
 	}
 }
+
+// Overrides and resolutions that force a member with "workspace:" are edges
+// from every member to it, by the selector's name.
+func TestOverridesNamingMembers(t *testing.T) {
+	g := resolveJS(t, map[string]string{
+		"package.json": `{"workspaces":["apps/*","packages/*"],
+			"pnpm":{"overrides":{"foo@1>@acme/lib":"workspace:*"}},
+			"resolutions":{"**/legacy":"workspace:^"},
+			"overrides":{"bar":{"@acme/nested":"workspace:~"},"react":"18.3.1"}}`,
+		"apps/web/package.json":         `{"name":"web","dependencies":{"react":"*"}}`,
+		"packages/lib/package.json":     `{"name":"@acme/lib"}`,
+		"packages/legacy/package.json":  `{"name":"legacy"}`,
+		"packages/nested/package.json":  `{"name":"@acme/nested"}`,
+		"packages/unused/package.json":  `{"name":"unused"}`,
+		"packages/react-x/package.json": `{"name":"react-x"}`,
+	})
+	want := []string{"apps/web", "packages/legacy", "packages/lib", "packages/nested"}
+	if got := graph.SortedKeys(closure(g, "apps/web")); !reflect.DeepEqual(got, want) {
+		t.Errorf("closure = %v, want %v", got, want)
+	}
+
+	// pnpm-workspace.yaml overrides, with catalogs around.
+	g = resolveJS(t, map[string]string{
+		"package.json":              `{"name":"root"}`,
+		"pnpm-workspace.yaml":       "packages: ['apps/*', 'packages/*']\ncatalog:\n  react: ^18.3.1\ncatalogs:\n  next:\n    react: ^19\noverrides:\n  '@acme/lib': 'workspace:*'\n  react: 'catalog:'\n",
+		"apps/web/package.json":     `{"name":"web","dependencies":{"react":"catalog:","next":"catalog:next"}}`,
+		"packages/lib/package.json": `{"name":"@acme/lib"}`,
+		"packages/ui/package.json":  `{"name":"ui"}`,
+	})
+	if got := graph.SortedKeys(closure(g, "apps/web")); !reflect.DeepEqual(got, []string{"apps/web", "packages/lib"}) {
+		t.Errorf("pnpm-workspace.yaml: closure = %v", got)
+	}
+}
+
+// Member scripts that build other members are edges.
+func TestScriptEdges(t *testing.T) {
+	g := resolveJS(t, map[string]string{
+		"package.json":                 `{"workspaces":["apps/*","packages/*"]}`,
+		"pnpm-lock.yaml":               "",
+		"apps/web/package.json":        `{"name":"web","scripts":{"build":"pnpm -F docs build && next build","dev":"next dev","lint":"pnpm run lint:css"}}`,
+		"apps/api/package.json":        `{"name":"api","scripts":{"build":"cd ../../packages/schema && npm run build && tsc","start":"node dist/x.js"}}`,
+		"apps/admin/package.json":      `{"name":"admin","scripts":{"build":"yarn workspace kit build; pnpm -r build; vite build"}}`,
+		"packages/docs/package.json":   `{"name":"docs"}`,
+		"packages/schema/package.json": `{"name":"schema"}`,
+		"packages/kit/package.json":    `{"name":"kit"}`,
+		"packages/other/package.json":  `{"name":"other"}`,
+	})
+	for anchor, want := range map[string][]string{
+		"apps/web":   {"apps/web", "packages/docs"},
+		"apps/api":   {"apps/api", "packages/schema"},
+		"apps/admin": {"apps/admin", "packages/kit"},
+	} {
+		if got := graph.SortedKeys(closure(g, anchor)); !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: closure = %v, want %v", anchor, got, want)
+		}
+	}
+}

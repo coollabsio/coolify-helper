@@ -120,35 +120,53 @@ func Match(pattern, p string) (bool, error) {
 	return matchSegs(ps, ss)
 }
 
+// matchSegs matches path segments against pattern segments. It keeps the set
+// of path positions the pattern can reach so far, so its time is
+// O(len(ps)·len(ss)) segment matches, whatever the number of "**".
 func matchSegs(ps, ss []string) (bool, error) {
-	for len(ps) > 0 {
-		if ps[0] == "**" {
-			// Collapse consecutive "**".
-			for len(ps) > 1 && ps[1] == "**" {
-				ps = ps[1:]
-			}
-			for k := 0; k <= len(ss); k++ {
-				if k > 0 && strings.HasPrefix(ss[k-1], ".") {
-					// "**" does not enter dot directories.
-					return false, nil
+	cur := make([]bool, len(ss)+1)
+	cur[0] = true
+	for pi := 0; pi < len(ps); pi++ {
+		next := make([]bool, len(ss)+1)
+		any := false
+		if ps[pi] == "**" {
+			// Zero or more segments, but "**" does not enter dot directories.
+			for i := 0; i <= len(ss); i++ {
+				if !cur[i] {
+					continue
 				}
-				ok, err := matchSegs(ps[1:], ss[k:])
-				if err != nil || ok {
-					return ok, err
+				for k := i; k <= len(ss); k++ {
+					if next[k] {
+						break
+					}
+					next[k] = true
+					any = true
+					if k < len(ss) && strings.HasPrefix(ss[k], ".") {
+						break
+					}
 				}
 			}
+		} else {
+			for i := 0; i < len(ss); i++ {
+				if !cur[i] {
+					continue
+				}
+				ok, err := matchSegment(ps[pi], ss[i])
+				if err != nil {
+					return false, err
+				}
+				if ok {
+					next[i+1] = true
+					any = true
+				}
+			}
+		}
+		if !any {
 			return false, nil
 		}
-		if len(ss) == 0 {
-			return false, nil
-		}
-		ok, err := matchSegment(ps[0], ss[0])
-		if err != nil || !ok {
-			return false, err
-		}
-		ps, ss = ps[1:], ss[1:]
+		cur = next
 	}
-	return len(ss) == 0, nil
+	return cur[len(ss)], nil
 }
 
 // matchSegment matches one segment with "*", "?" and classes.
@@ -159,47 +177,66 @@ func matchSegment(p, s string) (bool, error) {
 	return matchChars(p, s)
 }
 
+// matchChars matches one segment. Like matchSegs, it keeps the set of
+// positions of s the pattern can reach, so it runs in O(len(p)·len(s)): a
+// pattern such as "*a*a*a*a*b" can't make it backtrack exponentially.
 func matchChars(p, s string) (bool, error) {
+	cur := make([]bool, len(s)+1)
+	cur[0] = true
 	for len(p) > 0 {
+		next := make([]bool, len(s)+1)
+		any := false
 		switch p[0] {
 		case '*':
 			for len(p) > 0 && p[0] == '*' {
 				p = p[1:]
 			}
-			for k := 0; k <= len(s); k++ {
-				ok, err := matchChars(p, s[k:])
-				if err != nil || ok {
-					return ok, err
+			on := false
+			for i := 0; i <= len(s); i++ {
+				on = on || cur[i]
+				next[i] = on
+				any = any || on
+			}
+		case '?':
+			p = p[1:]
+			for i := 0; i < len(s); i++ {
+				if cur[i] {
+					_, n := firstRune(s[i:])
+					next[i+n] = true
+					any = true
 				}
 			}
-			return false, nil
-		case '?':
-			if len(s) == 0 {
-				return false, nil
-			}
-			_, n := firstRune(s)
-			p, s = p[1:], s[n:]
 		case '[':
 			end, negate, set, err := parseClass(p)
 			if err != nil {
 				return false, err
 			}
-			if len(s) == 0 {
-				return false, nil
+			p = p[end:]
+			for i := 0; i < len(s); i++ {
+				if cur[i] {
+					r, n := firstRune(s[i:])
+					if set(r) != negate {
+						next[i+n] = true
+						any = true
+					}
+				}
 			}
-			r, n := firstRune(s)
-			if set(r) == negate {
-				return false, nil
-			}
-			p, s = p[end:], s[n:]
 		default:
-			if len(s) == 0 || p[0] != s[0] {
-				return false, nil
+			c := p[0]
+			p = p[1:]
+			for i := 0; i < len(s); i++ {
+				if cur[i] && s[i] == c {
+					next[i+1] = true
+					any = true
+				}
 			}
-			p, s = p[1:], s[1:]
 		}
+		if !any {
+			return false, nil
+		}
+		cur = next
 	}
-	return len(s) == 0, nil
+	return cur[len(s)], nil
 }
 
 func firstRune(s string) (rune, int) { return utf8.DecodeRuneInString(s) }

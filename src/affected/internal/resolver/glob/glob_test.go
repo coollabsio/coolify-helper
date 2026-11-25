@@ -2,7 +2,9 @@ package glob
 
 import (
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/coollabsio/coolify-helper/src/affected/internal/match"
 )
@@ -112,6 +114,47 @@ func TestToRules(t *testing.T) {
 	for _, p := range []string{"../x", "/abs", "@(a|b)", "a\x00b"} {
 		if _, err := ToRules("", p); err == nil {
 			t.Errorf("ToRules(%q): want an error", p)
+		}
+	}
+}
+
+// Patterns that make a backtracking matcher exponential finish quickly.
+func TestMatchPathological(t *testing.T) {
+	cases := []struct{ pattern, path string }{
+		{"p/*a*a*a*a*a*a*a*a*a*a*a*a*a*a*b", "p/" + strings.Repeat("a", 40)},
+		{"**/a/**/a/**/a/**/a/**/a/**/b", strings.TrimSuffix(strings.Repeat("a/", 40), "/")},
+		{"*?*?*?*?*?*?*?*?*?*?*?*?*b", strings.Repeat("a", 60)},
+		{"*[a]*[a]*[a]*[a]*[a]*[a]*[a]*[a]*[a]*[a]*b", strings.Repeat("a", 60)},
+	}
+	for _, c := range cases {
+		done := make(chan bool, 1)
+		start := time.Now()
+		go func() {
+			ok, _ := Match(c.pattern, c.path)
+			done <- ok
+		}()
+		select {
+		case ok := <-done:
+			if ok {
+				t.Errorf("%s matched", c.pattern)
+			}
+			if d := time.Since(start); d > 100*time.Millisecond {
+				t.Errorf("%s took %v", c.pattern, d)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("%s hangs", c.pattern)
+		}
+	}
+	// Still exact.
+	for _, c := range []struct {
+		pattern, path string
+		want          bool
+	}{
+		{"p/*a*b", "p/xxaxxb", true}, {"p/*a*b", "p/xxbxxa", false}, {"a/**/b", "a/.x/b", false}, {"a/**/b", "a/x/y/b", true},
+		{"?é?", "aéb", true}, {"[!a]x", "bx", true}, {"[!a]x", "ax", false}, {"*.ts", ".x.ts", false},
+	} {
+		if got, err := Match(c.pattern, c.path); err != nil || got != c.want {
+			t.Errorf("Match(%q, %q) = %v, %v", c.pattern, c.path, got, err)
 		}
 	}
 }

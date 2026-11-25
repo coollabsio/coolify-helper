@@ -198,12 +198,61 @@ func TestAnchor(t *testing.T) {
 
 func TestPathspecsDetect(t *testing.T) {
 	r := nx.New()
-	for p, want := range map[string]bool{"nx.json": true, "apps/x/project.json": true, "tsconfig.base.json": true, "apps/x/package.json": true, "node_modules/a/project.json": false, "apps/x/tsconfig.json": false} {
+	for p, want := range map[string]bool{"nx.json": true, "apps/x/project.json": true, "tsconfig.base.json": true, "apps/x/package.json": true, "node_modules/a/project.json": false, "apps/x/tsconfig.json": true, "apps/x/tsconfig.app.json": true, "node_modules/a/tsconfig.json": false, "apps/x/base.json": false} {
 		if r.Pathspecs(p) != want {
 			t.Errorf("Pathspecs(%q) != %v", p, want)
 		}
 	}
 	if !r.Detect(tree.NewMem(map[string]string{"libs/a/project.json": "{}"})) || r.Detect(tree.NewMem(map[string]string{"package.json": "{}"})) {
 		t.Errorf("Detect")
+	}
+}
+
+// Wildcard alias targets point into every project under their literal
+// directory; a project's own tsconfig files (and what they extend) add edges
+// from that project. Every file read is covered by Pathspecs.
+func TestAliasWildcardsAndProjectTSConfigs(t *testing.T) {
+	files := map[string]string{
+		"nx.json":                    `{}`,
+		"tsconfig.base.json":         `{"compilerOptions":{"baseUrl":".","paths":{"@acme/*":["libs/*/src/index.ts"]}}}`,
+		"apps/web/project.json":      `{"name":"web"}`,
+		"libs/ui/project.json":       `{"name":"ui"}`,
+		"libs/data/project.json":     `{"name":"data"}`,
+		"tools/gen/project.json":     `{"name":"gen"}`,
+		"pkgs/a/project.json":        `{"name":"a"}`,
+		"pkgs/b/project.json":        `{"name":"b"}`,
+		"apps/api/project.json":      `{"name":"api"}`,
+		"apps/api/tsconfig.app.json": `{"extends":"./tsconfig.json"}`,
+		"apps/api/tsconfig.json":     `{"extends":"../../configs/tsconfig.paths.json"}`,
+		// No baseUrl: relative to this file.
+		"configs/tsconfig.paths.json": `{"compilerOptions":{"paths":{"@p/*":["../pkgs/*"]}}}`,
+		"apps/odd/project.json":       `{"name":"odd"}`,
+		"apps/odd/tsconfig.json":      `{"extends":"./base"}`,
+		"apps/odd/base.json":          `{"compilerOptions":{"paths":{"x":["../../tools/gen"]}}}`,
+	}
+	tr := &rt.Counting{Tree: tree.NewMem(files)}
+	g, err := nx.New().Resolve(context.Background(), tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.Normalize()
+	r := nx.New()
+	for _, b := range tr.Batches {
+		for _, p := range b {
+			if !r.Pathspecs(p) {
+				t.Errorf("read %s, which Pathspecs does not cover", p)
+			}
+		}
+	}
+	all := []string{"apps/api", "apps/odd", "apps/web", "libs/data", "libs/ui", "pkgs/a", "pkgs/b", "tools/gen"}
+	for anchor, want := range map[string][]string{
+		"apps/web": {"apps/web", "libs/data", "libs/ui"},
+		"apps/api": {"apps/api", "libs/data", "libs/ui", "pkgs/a", "pkgs/b"},
+		// base.json is not a tsconfig*.json file: unread, it may alias anything.
+		"apps/odd": all,
+	} {
+		if got := graph.SortedKeys(g.Closure([]string{anchor})); !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: closure = %v, want %v", anchor, got, want)
+		}
 	}
 }

@@ -16,11 +16,16 @@
 //
 // Nx also infers edges from TypeScript imports. Imports between packages that
 // declare each other in package.json are already edges; imports through the
-// "compilerOptions.paths" aliases of the root tsconfig.base.json/tsconfig.json
-// ("integrated" repositories, where libraries have no package.json) are not
-// declared anywhere. Until scan (§9) reports them as reference_paths, the
-// resolver assumes the worst: every project depends on every project that a
-// root alias points into. Finer import edges come from scan.
+// "compilerOptions.paths" aliases ("integrated" repositories, where libraries
+// have no package.json) are not declared anywhere. Until scan (§9) reports them
+// as reference_paths, the resolver assumes the worst: every project depends on
+// every project that an alias of the root tsconfig.base.json/tsconfig.json
+// points into, and a project depends on every project that an alias of its own
+// tsconfig*.json files points into. The files they "extend" with a relative
+// path are followed (up to 5 levels). A wildcard target ("libs/*/src/index.ts")
+// points into every project under its literal directory ("libs"). Finer
+// import edges come from scan. Member package.json scripts that run nx ("nx
+// build docs") are edges too.
 //
 // Projects that Nx plugins infer without a project.json are not modeled: their
 // directories are outside every member, so they stay included.
@@ -68,20 +73,16 @@ func inNodeModules(p string) bool {
 	return false
 }
 
-// Pathspecs implements resolver.Resolver: nx.json, every project.json, the root
-// tsconfig files, and what the js workspace reads (the members are projects).
+// Pathspecs implements resolver.Resolver: nx.json, every project.json, every
+// tsconfig*.json (the root ones, the projects' own and what they extend), and
+// what the js workspace reads (the members are projects).
 func (*Resolver) Pathspecs(p string) bool {
 	if inNodeModules(p) {
 		return false
 	}
 	switch {
-	case p == "nx.json", path.Base(p) == "project.json":
+	case p == "nx.json", path.Base(p) == "project.json", isTSConfig(p):
 		return true
-	}
-	for _, f := range rootTSConfigs {
-		if p == f {
-			return true
-		}
 	}
 	return js.New().Pathspecs(p)
 }
@@ -312,23 +313,11 @@ func (*Resolver) Resolve(ctx context.Context, t tree.Tree) (*graph.Graph, error)
 		}
 	}
 
-	// Root path aliases: every project may import them.
-	for _, f := range rootTSConfigs {
-		b, ok := files[f]
-		if !ok {
-			continue
-		}
-		targets, err := aliasTargets(b)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %v", f, err)
-		}
-		for _, tg := range targets {
-			if owner, ok := r.innermost(tg); ok {
-				for _, d := range dirs {
-					r.addEdge(d, owner)
-				}
-			}
-		}
+	// Path aliases: those of the root tsconfig files (with what they extend)
+	// are edges from every project, and those of a project's own tsconfig*.json
+	// files are edges from that project.
+	if err := r.aliasEdges(ctx, t, files); err != nil {
+		return nil, err
 	}
 
 	for _, d := range dirs {
@@ -341,6 +330,8 @@ func (*Resolver) Resolve(ctx context.Context, t tree.Tree) (*graph.Graph, error)
 			DepDirs:   p.depDirs,
 		})
 	}
+	// Member scripts that run nx ("nx build docs").
+	js.AddScriptEdges(w, g, g, (*Resolver)(nil).AnchorFromCommand, []string{"nx"})
 	return g, nil
 }
 
@@ -521,39 +512,278 @@ func workspaceRootGlob(g *graph.Graph, s, source string) error {
 	return nil
 }
 
-// aliasTargets returns the repository paths that the compilerOptions.paths of
-// a root tsconfig point to (up to the first "*").
-func aliasTargets(b []byte) ([]string, error) {
+// maxExtends caps how many "extends" levels of a tsconfig file are followed.
+const maxExtends = 5
+
+// isTSConfig reports whether a path is a tsconfig file the resolver reads:
+// "tsconfig*.json" at any depth. Pathspecs covers exactly these.
+func isTSConfig(p string) bool {
+	b := path.Base(p)
+	return strings.HasPrefix(b, "tsconfig") && strings.HasSuffix(b, ".json")
+}
+
+// tsconfig is the part of a tsconfig file that path aliases depend on.
+type tsconfig struct {
+	extends []string
+	// baseURL is the repository path of compilerOptions.baseUrl, "" with hasBase false when unset.
+	baseURL string
+	hasBase bool
+	targets []string
+}
+
+func parseTSConfig(file string, b []byte) (tsconfig, error) {
 	var cfg struct {
+		Extends         json.RawMessage `json:"extends"`
 		CompilerOptions struct {
-			BaseURL string              `json:"baseUrl"`
+			BaseURL *string             `json:"baseUrl"`
 			Paths   map[string][]string `json:"paths"`
 		} `json:"compilerOptions"`
 	}
 	if err := jsonc.Unmarshal(b, &cfg); err != nil {
-		return nil, err
+		return tsconfig{}, err
 	}
-	base, ok := pathx.Join("", cfg.CompilerOptions.BaseURL)
-	if !ok {
-		return nil, nil
-	}
-	var out []string
-	for _, alias := range sortedKeys(cfg.CompilerOptions.Paths) {
-		for _, tg := range cfg.CompilerOptions.Paths[alias] {
-			if i := strings.IndexByte(tg, '*'); i >= 0 {
-				tg = tg[:i]
-			}
-			if strings.HasPrefix(tg, "/") {
-				continue
-			}
-			p, ok := pathx.Join(base, tg)
-			if !ok {
-				continue
-			}
-			out = append(out, p)
+	var out tsconfig
+	if len(cfg.Extends) > 0 && string(cfg.Extends) != "null" {
+		var one string
+		if json.Unmarshal(cfg.Extends, &one) == nil {
+			out.extends = []string{one}
+		} else if err := json.Unmarshal(cfg.Extends, &out.extends); err != nil {
+			return tsconfig{}, fmt.Errorf("\"extends\" is neither a string nor a list of strings")
 		}
 	}
+	dir := pathx.Dir(file)
+	if u := cfg.CompilerOptions.BaseURL; u != nil && !strings.HasPrefix(*u, "/") {
+		if p, ok := pathx.Join(dir, *u); ok {
+			out.baseURL, out.hasBase = p, true
+		}
+	}
+	for _, alias := range sortedKeys(cfg.CompilerOptions.Paths) {
+		out.targets = append(out.targets, cfg.CompilerOptions.Paths[alias]...)
+	}
 	return out, nil
+}
+
+// aliasEdges adds the edges of compilerOptions.paths aliases. A chain of
+// tsconfig files is the root (or project) file and the files it "extends"
+// with a relative path, transitively. Each alias target is resolved against
+// every base of its chain (each file's directory and baseUrl): TypeScript uses
+// one of them, and the union only widens. A chain that can't be read whole
+// (a file that is not "tsconfig*.json", so the cache fingerprint doesn't cover
+// it, a file that can't be parsed, more than maxExtends levels) may alias
+// anything: its projects get an edge to every project.
+func (r *refs) aliasEdges(ctx context.Context, t tree.Tree, files map[string][]byte) error {
+	cache := map[string]tsconfig{}
+	bad := map[string]bool{}
+	for p, b := range files {
+		if isTSConfig(p) {
+			cfg, err := parseTSConfig(p, b)
+			if err != nil {
+				if pathx.Dir(p) == "" {
+					return fmt.Errorf("%s: %v", p, err)
+				}
+				bad[p] = true
+				continue
+			}
+			cache[p] = cfg
+		}
+	}
+	// chains: origin file → the projects that get the edges.
+	type origin struct {
+		file string
+		from []string
+	}
+	var origins []origin
+	for _, f := range rootTSConfigs {
+		if _, ok := t.Lookup(f); ok {
+			origins = append(origins, origin{file: f, from: r.dirs})
+		}
+	}
+	var own []string
+	for _, e := range t.Entries() {
+		d := pathx.Dir(e.Path)
+		if d == "" || !isTSConfig(e.Path) || inNodeModules(e.Path) {
+			continue
+		}
+		if _, ok := r.projects[d]; ok {
+			own = append(own, e.Path)
+			origins = append(origins, origin{file: e.Path, from: []string{d}})
+		}
+	}
+	// Read the files level by level.
+	pending := own
+	for level := 0; level <= maxExtends+1 && len(pending) > 0; level++ {
+		var batch []string
+		for _, p := range pending {
+			if _, ok := cache[p]; !ok && !bad[p] {
+				batch = append(batch, p)
+			}
+		}
+		if len(batch) > 0 {
+			sort.Strings(batch)
+			got, err := t.Read(ctx, batch)
+			if err != nil {
+				return err
+			}
+			for _, p := range batch {
+				b, ok := got[p]
+				if !ok {
+					bad[p] = true
+					continue
+				}
+				cfg, err := parseTSConfig(p, b)
+				if err != nil {
+					bad[p] = true
+					continue
+				}
+				cache[p] = cfg
+			}
+		}
+		pending = nil
+		for _, p := range batch {
+			for _, ext := range cache[p].extends {
+				if f, ok := r.extendsFile(t, p, ext); ok && isTSConfig(f) {
+					pending = append(pending, f)
+				}
+			}
+		}
+		// Root files were read in the first batch, but what they extend was not.
+		if level == 0 {
+			for _, f := range rootTSConfigs {
+				for _, ext := range cache[f].extends {
+					if ef, ok := r.extendsFile(t, f, ext); ok && isTSConfig(ef) {
+						pending = append(pending, ef)
+					}
+				}
+			}
+		}
+	}
+
+	for _, o := range origins {
+		chain, complete := r.chain(t, o.file, cache, bad)
+		if !complete {
+			for _, from := range o.from {
+				for _, to := range r.dirs {
+					r.addEdge(from, to)
+				}
+			}
+			continue
+		}
+		var bases, targets []string
+		for _, f := range chain {
+			cfg := cache[f]
+			bases = append(bases, pathx.Dir(f))
+			if cfg.hasBase {
+				bases = append(bases, cfg.baseURL)
+			}
+			targets = append(targets, cfg.targets...)
+		}
+		for _, tg := range targets {
+			for _, base := range bases {
+				for _, to := range r.aliasProjects(base, tg) {
+					for _, from := range o.from {
+						r.addEdge(from, to)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// extendsFile resolves an "extends" value of the tsconfig file at p. It
+// reports false for a package ("@tsconfig/node20/tsconfig.json"), which lives
+// in node_modules, and for a path that leaves the repository or doesn't exist.
+func (r *refs) extendsFile(t tree.Tree, p, ext string) (string, bool) {
+	if !strings.HasPrefix(ext, "./") && !strings.HasPrefix(ext, "../") && ext != "." && ext != ".." {
+		return "", false
+	}
+	f, ok := pathx.Join(pathx.Dir(p), ext)
+	if !ok || f == "" {
+		return "", false
+	}
+	if _, ok := t.Lookup(f); ok {
+		return f, true
+	}
+	if !strings.HasSuffix(f, ".json") {
+		if _, ok := t.Lookup(f + ".json"); ok {
+			return f + ".json", true
+		}
+	}
+	return "", false
+}
+
+// chain returns the tsconfig files of a chain, and false when it can't be read whole.
+func (r *refs) chain(t tree.Tree, file string, cache map[string]tsconfig, bad map[string]bool) ([]string, bool) {
+	var out []string
+	seen := map[string]bool{}
+	level := []string{file}
+	for depth := 0; len(level) > 0; depth++ {
+		if depth > maxExtends {
+			return nil, false
+		}
+		var next []string
+		for _, f := range level {
+			if seen[f] {
+				continue
+			}
+			seen[f] = true
+			cfg, ok := cache[f]
+			if !ok || bad[f] {
+				return nil, false
+			}
+			out = append(out, f)
+			for _, ext := range cfg.extends {
+				if !strings.HasPrefix(ext, ".") {
+					continue
+				}
+				ef, ok := r.extendsFile(t, f, ext)
+				if !ok {
+					// Outside the repository, or a file that doesn't exist (tsc
+					// fails): nothing in the repository to alias.
+					continue
+				}
+				if !isTSConfig(ef) {
+					return nil, false
+				}
+				next = append(next, ef)
+			}
+		}
+		level = next
+	}
+	return out, true
+}
+
+// aliasProjects returns the projects an alias target, relative to base, may
+// point into: the innermost project that contains the literal directory before
+// the first "*" ("libs" for "libs/*/src/index.ts", "libs" for "libs/ui-*"),
+// and every project under that directory.
+func (r *refs) aliasProjects(base, tg string) []string {
+	if strings.HasPrefix(tg, "/") {
+		return nil
+	}
+	lit := tg
+	wild := false
+	if i := strings.IndexByte(tg, '*'); i >= 0 {
+		lit, wild = tg[:i], true
+	}
+	dir, ok := pathx.Join(base, lit)
+	if !ok {
+		return nil
+	}
+	if wild && lit != "" && !strings.HasSuffix(lit, "/") && path.Base(lit) != "." && path.Base(lit) != ".." {
+		// "libs/ui-*": the directory is "libs".
+		dir = pathx.Dir(dir)
+	}
+	var out []string
+	if owner, ok := r.innermost(dir); ok {
+		out = append(out, owner)
+	}
+	for _, d := range r.dirs {
+		if d != dir && pathx.Within(d, dir) {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // AnchorFromCommand implements resolver.Resolver for "nx <target> <project>",

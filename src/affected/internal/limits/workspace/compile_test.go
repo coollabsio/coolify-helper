@@ -56,7 +56,7 @@ func TestCompileMonorepo(t *testing.T) {
 		"apps/api/src/main.ts":                "exclude",
 		"apps/api/package.json":               "include:global",
 		"apps/api":                            "exclude",
-		"apps/web/examples/demo/index.ts":     "exclude",
+		"apps/web/examples/demo/index.ts":     "include:workspace", // inside apps/web, a closure member
 		"apps/web/examples/demo/package.json": "include:global",
 		"packages/cfg/index.js":               "exclude",
 		"packages/cfg/theme/x.css":            "include:reference",
@@ -104,7 +104,8 @@ func TestCompileRuleOrder(t *testing.T) {
 	got := Display(res.Ruleset)
 	want := []string{
 		// (a) members, shallow first
-		"!apps/api/**", "apps/web/**", "!packages/cfg/**", "packages/ui/**", "packages/utils/**", "!apps/web/examples/demo/**",
+		"!apps/api/**", "apps/web/**", "!packages/cfg/**", "packages/ui/**", "packages/utils/**",
+		// (no rule for apps/web/examples/demo: it is inside apps/web, a closure member)
 		// (b) meta
 		"!README*", "!LICENSE*", "!CHANGELOG*", "!CONTRIBUTING*", "!CODE_OF_CONDUCT*", "!SECURITY*",
 		"!.github/**", "!.gitlab/**", "!.vscode/**", "!.idea/**", "!.husky/**", "!.changeset/**",
@@ -131,9 +132,10 @@ func TestCompileNestedMembers(t *testing.T) {
 			t.Errorf("%s: %s, want %s", p, got, want)
 		}
 	}
-	// The parent is the anchor; the nested member is not a dependency.
+	// The parent is the anchor; the nested member is not a dependency, but its
+	// files are inside the anchor's directory: they stay included.
 	res = compileFor(t, monorepo, "apps/web/Dockerfile", nil, nil)
-	if got := decide(res.Ruleset, "apps/web/examples/demo/x.ts"); got != "exclude" {
+	if got := decide(res.Ruleset, "apps/web/examples/demo/x.ts"); got != "include:workspace" {
 		t.Errorf("nested non-dependency: %s", got)
 	}
 	// An outer member excluded, an inner one in the closure.
