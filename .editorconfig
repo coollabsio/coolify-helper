@@ -26,3 +26,21 @@ indent_size = unset
 [*.lock]
 indent_style = space
 indent_size = 4
+
+[*.json]
+indent_size = unset
+
+[src/affected/**_test.go]
+# Go is formatted by gofmt; tests embed YAML, JSON and other fixtures in raw strings
+indent_style = unset
+
+[*.txtar]
+# Fixture files hold the files of test repositories, in their own formats
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset
+
+[src/affected/testdata/php/*.php]
+# The PHP reference matchers follow Coolify's code style
+indent_style = space
+indent_size = 4
